@@ -40,6 +40,7 @@ What is *not* in the MVP (sprints, notifications, attachments, integrations, and
 | [docs/requirements.md](docs/requirements.md) | Vision, users and roles, functional and non-functional requirements, MVP scope, out of scope. |
 | [docs/user-stories.md](docs/user-stories.md) | User stories with priorities, acceptance criteria and edge cases. |
 | [docs/constraints.md](docs/constraints.md) | Constraints, assumptions, security and privacy requirements, pending technical decisions. |
+| [docs/architecture.md](docs/architecture.md) | Architecture decision (modular monolith), technology choices, components, authorisation approach. |
 | [docs/review-log.md](docs/review-log.md) | Critical review of the specification: findings and the decision taken on each, plus the prompt comparison from Exercise 1. |
 | [AGENTS.md](AGENTS.md) | Persistent instructions for AI coding agents working on this repository. |
 
@@ -47,7 +48,7 @@ Architecture, data model and API contract will be added in the next stage.
 
 ## Technology
 
-Decided: Java with Spring Boot (backend), React (frontend), PostgreSQL (database), structured as a modular monolith, with a REST API described in OpenAPI. Remaining technical choices are listed in [docs/constraints.md](docs/constraints.md), section 4.2.
+Java with Spring Boot (backend), React with TypeScript (frontend), PostgreSQL (database), structured as a modular monolith with a REST API described in OpenAPI. Decisions and reasons are in [docs/architecture.md](docs/architecture.md); open points are in [docs/constraints.md](docs/constraints.md), section 4.2.
 
 ## Current status
 
