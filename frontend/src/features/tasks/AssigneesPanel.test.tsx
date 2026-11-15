@@ -21,6 +21,7 @@ const routes = (role: "OWNER" | "MEMBER" | "VIEWER", assignees = [ana]) => ({
   "GET /api/v1/tasks/5": () => json(200, task({ assignees })),
   "GET /api/v1/projects/1": () => json(200, project({ myRole: role })),
   "GET /api/v1/projects/1/members": () => json(200, MEMBERS),
+  "GET /api/v1/tasks/5/comments": () => json(200, { items: [], page: 0, size: 20, totalItems: 0, totalPages: 0 }),
 });
 
 const panel = () => screen.findByRole("region", { name: "Assignees" });

@@ -15,6 +15,8 @@ spring:
   jackson:
     deserialization:
       fail-on-unknown-properties: true   # a field that is not in the contract is refused with 400
+    mapper:
+      allow-coercion-of-scalars: false   # a value of the wrong JSON type (42 for text, "2" for a number) is refused with 400
 
 server:
   port: 8080

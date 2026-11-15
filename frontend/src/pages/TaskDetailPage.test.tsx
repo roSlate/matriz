@@ -12,6 +12,7 @@ const taskRoutes = (role: "OWNER" | "MEMBER" | "VIEWER" = "OWNER", overrides = {
   "GET /api/v1/projects/1": () => json(200, project({ myRole: role })),
   // The people who can be assigned; the assignee tests have their own file.
   "GET /api/v1/projects/1/members": () => json(200, []),
+  "GET /api/v1/tasks/5/comments": () => json(200, { items: [], page: 0, size: 20, totalItems: 0, totalPages: 0 }),
 });
 
 describe("task page", () => {

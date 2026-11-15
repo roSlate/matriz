@@ -17,6 +17,7 @@ import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { SelectField } from "../components/ui/SelectField";
+import { CommentsSection } from "../features/comments/CommentsSection";
 import { AssigneesPanel } from "../features/tasks/AssigneesPanel";
 import { TaskFormDialog } from "../features/tasks/TaskFormDialog";
 import { PRIORITY_LABELS, PRIORITY_OPTIONS, STATUS_LABELS, STATUS_OPTIONS } from "../features/tasks/taskLabels";
@@ -181,6 +182,8 @@ export default function TaskDetailPage() {
           onChanged={(assignees) => setState({ status: "ready", task: { ...task, assignees }, project })}
         />
       </Card>
+
+      <CommentsSection taskId={task.id} canWrite={canWrite} />
 
       {editing && (
         <TaskFormDialog
