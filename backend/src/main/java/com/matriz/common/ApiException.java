@@ -27,6 +27,16 @@ public class ApiException extends ErrorResponseException {
         return new ApiException(HttpStatus.FORBIDDEN, "You do not have permission to do this.", "ROLE_INSUFFICIENT");
     }
 
+    /** The request is valid but clashes with the current state (for example, a duplicate). */
+    public static ApiException conflict(String detail, String code) {
+        return new ApiException(HttpStatus.CONFLICT, detail, code);
+    }
+
+    /** The request is well formed but refers to something that does not exist (for example, an unknown email). */
+    public static ApiException unprocessable(String detail, String code) {
+        return new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, detail, code);
+    }
+
     public static ApiException badRequest(String detail) {
         return new ApiException(HttpStatus.BAD_REQUEST, detail, null);
     }

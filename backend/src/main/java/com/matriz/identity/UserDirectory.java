@@ -2,6 +2,7 @@ package com.matriz.identity;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,13 @@ public class UserDirectory {
 
     public UserDirectory(UserRepository users) {
         this.users = users;
+    }
+
+    /** The user with this email, ignoring letter case (A-23), or empty if nobody has it. */
+    @Transactional(readOnly = true)
+    public Optional<UserSummary> findByEmail(String email) {
+        return users.findByEmailIgnoreCase(email)
+                .map(user -> new UserSummary(user.getId(), user.getName(), user.getEmail()));
     }
 
     /** The summaries of the given users, keyed by id, in one query. Unknown ids are left out. */

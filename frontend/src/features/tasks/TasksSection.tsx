@@ -115,7 +115,7 @@ export function TasksSection({ project, onChanged }: TasksSectionProps) {
 
       {state.status === "ready" && state.data.totalItems > 0 && (
         <>
-          <table className="task-table">
+          <table className="task-table" aria-label="Tasks">
             <thead>
               <tr>
                 <th scope="col">Title</th>

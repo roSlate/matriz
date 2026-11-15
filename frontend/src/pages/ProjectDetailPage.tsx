@@ -10,6 +10,7 @@ import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { ProjectFormDialog } from "../features/projects/ProjectFormDialog";
 import { ProjectProgress } from "../features/projects/ProjectProgress";
 import { ROLE_LABELS } from "../features/projects/projectLabels";
+import { MembersSection } from "../features/members/MembersSection";
 import { TasksSection } from "../features/tasks/TasksSection";
 import "./pages.css";
 
@@ -120,6 +121,8 @@ export default function ProjectDetailPage() {
       </Card>
 
       <TasksSection project={project} onChanged={refreshProject} />
+
+      <MembersSection project={project} />
 
       {deleting && (
         <ConfirmDialog

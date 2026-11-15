@@ -187,11 +187,13 @@
 }
 
 /* Tasks on the project page */
-.tasks {
+.tasks,
+.members {
   margin-top: var(--space-5);
 }
 
 .tasks h2,
+.members h2,
 .section-title {
   margin: 0;
   font-size: 1.3rem;

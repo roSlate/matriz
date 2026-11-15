@@ -1231,7 +1231,8 @@ components:
           type: string
           description: |
             Machine-readable reason when the status alone is ambiguous, for example
-            `CSRF_TOKEN_INVALID` or `ROLE_INSUFFICIENT` (both `403`).
+            `CSRF_TOKEN_INVALID` or `ROLE_INSUFFICIENT` (both `403`). The member operations add
+            `USER_NOT_FOUND` (`422`), `ALREADY_MEMBER` and `OWNER_PROTECTED` (both `409`).
         errors:
           type: array
           description: Present on validation errors (`400`).

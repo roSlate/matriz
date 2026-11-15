@@ -54,9 +54,9 @@ Java with Spring Boot (backend), React with TypeScript (frontend), PostgreSQL (d
 
 ## Current status
 
-**Stage: implementation, increments 0, 1, 2, 4 and 6 of 9 done.** The Specification Pack and the Architecture Pack are written and have each been through an independent review. Working now: the skeleton and demo data; **authentication** (session, CSRF, login page); **projects** (a dashboard with role, task counts and progress; searching by name; creating, viewing, editing, and deleting for the Owner); and **tasks** (a task list with status and priority filters and paging, creating, a task page with status and priority changes, editing and deleting), with access rules enforced on the server for every role. Not built yet: managing members, assigning people, comments, and the manual progress override. Progress is tracked in [docs/implementation-plan.md](docs/implementation-plan.md).
+**Stage: implementation, increments 0, 1, 2, 3, 4 and 6 of 9 done.** The Specification Pack and the Architecture Pack are written and have each been through an independent review. Working now: the skeleton and demo data; **authentication** (session, CSRF, login page); **projects** (a dashboard with role, task counts and progress; searching by name; creating, viewing, editing, and deleting for the Owner); and **tasks** (a task list with status and priority filters and paging, creating, a task page with status and priority changes, editing and deleting), and **members** (a list for everyone in the project; adding by email, changing roles and removing for the Owner), with access rules enforced on the server for every role. Not built yet: assigning people, comments, and the manual progress override. Progress is tracked in [docs/implementation-plan.md](docs/implementation-plan.md).
 
-Next: members and roles (increment 3), then assignees (5), and comments and the override if time allows.
+Next: assignees (increment 5), then comments (7) and the override (8) if time allows, then verification and delivery (9).
 
 ## Running the project (development)
 

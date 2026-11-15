@@ -17,6 +17,8 @@ import {
 const projectAs = (role: "OWNER" | "MEMBER" | "VIEWER") => ({
   ...signedInAsAna,
   "GET /api/v1/projects/1": () => json(200, project({ myRole: role })),
+  // The page also shows the members; an empty list keeps these task tests about tasks only.
+  "GET /api/v1/projects/1/members": () => json(200, []),
 });
 
 const ana = { id: 1, name: "Ana Silva", email: "ana@example.org" };
@@ -40,7 +42,7 @@ describe("tasks on the project page", () => {
 
     renderApp("/projects/1");
 
-    const table = await screen.findByRole("table");
+    const table = await screen.findByRole("table", { name: "Tasks" });
     expect(within(table).getByRole("link", { name: "Write the project brief" })).toHaveAttribute("href", "/tasks/5");
     const first = within(table).getByRole("row", { name: /Write the project brief/ });
     expect(first).toHaveTextContent("In progress");
@@ -57,21 +59,21 @@ describe("tasks on the project page", () => {
     });
     renderApp("/projects/1");
     const user = userEvent.setup();
-    await screen.findByRole("table");
+    await screen.findByRole("table", { name: "Tasks" });
     const lastTaskRequest = () => String(requests(api, "GET", "/projects/1/tasks").at(-1)?.[0]);
 
     await user.selectOptions(screen.getByLabelText("Status"), "DONE");
-    await screen.findByRole("table");
+    await screen.findByRole("table", { name: "Tasks" });
     expect(lastTaskRequest()).toContain("status=DONE");
     expect(lastTaskRequest()).not.toContain("priority=");
 
     await user.selectOptions(screen.getByLabelText("Priority"), "HIGH");
-    await screen.findByRole("table");
+    await screen.findByRole("table", { name: "Tasks" });
     expect(lastTaskRequest()).toContain("status=DONE");
     expect(lastTaskRequest()).toContain("priority=HIGH");
 
     await user.click(screen.getByRole("button", { name: "Clear filters" }));
-    await screen.findByRole("table");
+    await screen.findByRole("table", { name: "Tasks" });
     expect(lastTaskRequest()).not.toContain("status=");
     expect(lastTaskRequest()).not.toContain("priority=");
     expect(screen.getByLabelText("Status")).toHaveValue("");
@@ -85,14 +87,14 @@ describe("tasks on the project page", () => {
     });
     renderApp("/projects/1");
     const user = userEvent.setup();
-    await screen.findByRole("table");
+    await screen.findByRole("table", { name: "Tasks" });
 
     await user.selectOptions(screen.getByLabelText("Status"), "DONE");
 
     expect(await screen.findByText("No tasks match the filters.")).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     await user.click(screen.getAllByRole("button", { name: "Clear filters" })[0]);
-    expect(await screen.findByRole("table")).toBeInTheDocument();
+    expect(await screen.findByRole("table", { name: "Tasks" })).toBeInTheDocument();
   });
 
   it.each(["OWNER", "MEMBER"] as const)("offers to create the first task to a %s", async (role) => {
@@ -113,7 +115,7 @@ describe("tasks on the project page", () => {
 
     renderApp("/projects/1");
 
-    expect(await screen.findByRole("table")).toBeInTheDocument();
+    expect(await screen.findByRole("table", { name: "Tasks" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "New task" })).not.toBeInTheDocument();
   });
 
@@ -138,7 +140,7 @@ describe("tasks on the project page", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not load the tasks.");
     await user.click(screen.getByRole("button", { name: "Try again" }));
 
-    expect(await screen.findByRole("table")).toBeInTheDocument();
+    expect(await screen.findByRole("table", { name: "Tasks" })).toBeInTheDocument();
   });
 
   it("moves between pages", async () => {

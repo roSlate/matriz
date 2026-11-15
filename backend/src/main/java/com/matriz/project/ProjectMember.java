@@ -59,6 +59,10 @@ public class ProjectMember {
         return role;
     }
 
+    public void changeRole(Role newRole) {
+        this.role = newRole;
+    }
+
     public Instant getAddedAt() {
         return addedAt;
     }

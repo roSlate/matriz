@@ -60,6 +60,12 @@ public final class FieldValidation {
         return this;
     }
 
+    /** Records a problem found by the caller's own rule. */
+    public FieldValidation addError(String field, String message) {
+        errors.add(error(field, message));
+        return this;
+    }
+
     /** Throws the {@code 400} response if anything was wrong. */
     public void throwIfInvalid() {
         if (!errors.isEmpty()) {

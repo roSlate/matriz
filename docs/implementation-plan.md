@@ -67,7 +67,7 @@ matriz/
 | 0 | Skeleton, database, demo data | none (setup) | none | Must | Done |
 | 1 | Authentication | US-01 | 0 | Must | Done |
 | 2 | Projects: create, list, view, edit | US-02 | 1 | Must | Done |
-| 3 | Members and roles | US-03 | 2 | Must | Planned |
+| 3 | Members and roles | US-03 | 2 | Must | Done |
 | 4 | Tasks | US-04, US-05, part of US-09 | 3 | Must | Done |
 | 5 | Assignees | US-07 | 4 | Should | Planned |
 | 6 | Dashboard, search, project deletion | US-06, rest of US-09, US-11 | 4 | Must | Done |
@@ -75,7 +75,7 @@ matriz/
 | 8 | Manual progress override | US-10 | 6 | Should | Planned |
 | 9 | Verification, review and delivery | all | all done | Must | Planned |
 
-**Order actually followed:** 0, 1, 2, then 4, 6, 3, 5, 7, 8, 9. Increment 4 (tasks) was built before 3 (members) because the demo data already gives every project members with all three roles, so tasks do not need member management to work, and the deadline made the core of the product the priority. The numbers are kept for reference; the "Depends on" column shows the logical dependency of the final system, not the build order.
+**Order actually followed:** 0, 1, 2, then 4, 6, 3, then 5, 7, 8, 9. Increment 4 (tasks) was built before 3 (members) because the demo data already gives every project members with all three roles, so tasks do not need member management to work, and the deadline made the core of the product the priority. The numbers are kept for reference; the "Depends on" column shows the logical dependency of the final system, not the build order.
 
 Milestone, as the ficha names it: **after increment 2**, a user can log in, create a project, see it in the list, and still see it after reloading the page and restarting the backend.
 
@@ -115,6 +115,7 @@ For every increment the working method is the one from the course: ask the AI fo
 - **Acceptance:** AC-03.1 to AC-03.9; EC-02, EC-06, EC-08, EC-11 (the task-related parts complete in increment 5).
 - **Checks:** all role combinations on member operations; the Owner rules; removing a member removes their access at once.
 - **Done when:** the Owner can manage members through the interface and other roles cannot.
+- **Result (done):** Backend `mvn test`: 90 tests pass (66 before, plus 24 member API tests). They cover: every member, including a Viewer, can list the members (Owner first, no password hash); a non-member gets `404` for the list and every operation, also with an invalid or malformed body; the Owner adds a user by email (trimmed, matched ignoring case) as Member or Viewer, and the new member can then read the project and, as a Member, write tasks but not edit the project, while an added Viewer cannot write; an unknown email gives `422` and a user who is already a member gives `409`, with no duplicate row and no role change; the role `OWNER` can never be given (`400`), nor can a second Owner exist; invalid, missing, unknown and malformed input gives `400`; a Member or Viewer gets `403` on every write while input is still checked first; a role change applies on the next request in the same session (EC-08); demoting a member to Viewer removes their assignments in that project only and keeps the tasks (EC-11), while promoting or choosing the same role removes nothing; the Owner can be neither demoted nor removed (`409`); a user who is not a member gives `404` and a malformed identifier `400`; removal ends access at once (project and task `404`, project list empty), removes the assignments, and keeps the tasks, the comments they wrote and the user (EC-02); a removed member can be added again, and removal in one project leaves the same user in the others. A **mutation check** that removed the Owner-only check from the three write operations made 3 tests fail (add, change role, remove); it was restored afterwards. The assignment cleanup was done now (option A): the project module publishes `MembershipChanged` and a listener in the task module deletes the assignments in the same transaction, so AC-03.5 and AC-03.8 hold already; increment 5 only adds the assign and unassign operations. Frontend: 72 tests pass and the type check is clean (59 before, plus 13: the list with email and role; no controls for a Member or a Viewer; select and Remove for the Owner but not on the Owner's own row; error with retry; adding with trimmed email, empty email refused without a request, the server's `422` and `409` reasons next to the field with the input kept, and no double send; role change shown from the server's answer and reverted on failure; remove with cancel, success, and failure keeping the dialog open). Two existing task tests had to name their table, because the page now has two tables; the tables now have accessible names. Verified for real on a second backend instance (port 8081, same dev database) with the seeded users: a Viewer lists members; Ana gets `404` on a project she is not in, also with an invalid body; Viewer and Member get `403` on add and remove; `422`, `409`, `400` for the role `OWNER`, and `409` for the Owner; on a throwaway project, Rui as Member could edit a task, after demotion the same session got `403`, his assignment was gone, after removal the project gave `404`; deleting the throwaway project brought the database counts back to the original (3 users, 3 projects, 6 memberships, 18 tasks, 4 assignments, 3 comments). The members panel was checked by component tests only, not yet by eye in a browser. The new error codes (`USER_NOT_FOUND`, `ALREADY_MEMBER`, `OWNER_PROTECTED`) were added to `openapi.yaml`, and a merged line in AC-03.1 and AC-03.2 of `user-stories.md` was split.
 
 ### Increment 4: Tasks (US-04, US-05, filters from US-09)
 
@@ -127,7 +128,7 @@ For every increment the working method is the one from the course: ask the AI fo
 
 ### Increment 5: Assignees (US-07)
 
-- **Backend:** `POST /tasks/{taskId}/assignees` and `DELETE /tasks/{taskId}/assignees/{userId}`; eligibility check (Owner or Member of the project); `409` and `422` cases; the handler in the task module for the membership event (assignment cleanup on removal and demotion).
+- **Backend:** `POST /tasks/{taskId}/assignees` and `DELETE /tasks/{taskId}/assignees/{userId}`; eligibility check (Owner or Member of the project); `409` and `422` cases. The handler in the task module for the membership event (assignment cleanup on removal and demotion) was already built in increment 3.
 - **Frontend:** assignees panel on the task detail page; the list of people to assign taken from the members list, without Viewers; "Unassigned" state.
 - **Acceptance:** AC-07.1 to AC-07.7; AC-03.5 and AC-03.8 (assignment cleanup); EC-02, EC-04, EC-11.
 - **Checks:** no duplicates; Viewers and outsiders are refused by the server; removing and demoting a member remove their assignments but keep the tasks.

@@ -56,7 +56,7 @@ If time runs short, US-08 and US-10 are the first to drop.
 
 *As a project owner, I want to add members and set their role, so that each person has the right level of access.*
 
-- **AC-03.1.** Given a project Owner, when they add an existing user as Member, then that user can see the project, create and edit tasks and comment, but cannot edit the project, set its progress, or add, remove or change members.- **AC-03.2.** Given an Owner, when they change a member's role, then the new rights apply from the next request, including in an already-open session.
+- **AC-03.1.** Given a project Owner, when they add an existing user as Member, then that user can see the project, create and edit tasks and comment, but cannot edit the project, set its progress, or add, remove or change members.
 - **AC-03.2.** Given an Owner, when they change a member's role, then the new rights apply from the next request, including in an already-open session.
 - **AC-03.3.** Given a Member or Viewer, when they try to add, remove or change anyone's role (including by direct API call), then it is refused with `403`.
 - **AC-03.4.** Given an Owner, when they add a user who is already a member, then it is refused with `409` and no duplicate membership is created.
