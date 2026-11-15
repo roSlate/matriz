@@ -1,0 +1,1199 @@
+openapi: 3.1.0
+
+info:
+  title: Matriz API
+  version: 0.1.0
+  summary: REST API of Matriz, a project and task management application.
+  description: |
+    Contract of the MVP described in `docs/requirements.md` and `docs/user-stories.md`.
+    This file is the contract only; the server is built in the implementation stage.
+
+    **Authentication.** A session cookie (`JSESSIONID`) is created by `POST /auth/login`
+    and invalidated by `POST /auth/logout`. A session expires after 30 minutes of inactivity.
+    Every operation except login requires a valid session.
+
+    **CSRF.** Requests that change data (POST, PUT, PATCH, DELETE) must send the header
+    `X-XSRF-TOKEN` with the value of the `XSRF-TOKEN` cookie, which the API sets on its responses.
+    A missing or wrong token is refused with `403`.
+
+    **Roles.** Access is decided per project: `OWNER`, `MEMBER` or `VIEWER` (see the permission
+    matrix in `docs/requirements.md`). Each operation states its minimum role in `x-minimum-role`.
+
+    **Status codes for access.**
+    - `401`: no valid session.
+    - `404`: the project, or the task or comment inside it, does not exist **or the user has no
+      access to its project**. The two cases are deliberately indistinguishable.
+    - `403`: the user has access but their role is too low for the operation.
+
+    **Validation.** String limits apply to the *trimmed* value, counted in characters.
+    Whitespace-only values count as empty. Invalid input gives `400` with a list of field errors.
+
+    **Errors.** All errors use the Problem Details format (RFC 9457, `application/problem+json`)
+    and never contain stack traces, SQL, file paths or internal names.
+
+    **Pagination.** Lists accept `page` (starting at 0, default 0) and `size` (default 20,
+    maximum 100).
+
+    **Identity.** The project owner, the comment author and all dates are set by the server.
+    Request bodies accept only the documented fields: any other field (for example an owner,
+    an author or a date) is refused with `400`.
+  contact:
+    name: Matriz project
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development
+
+tags:
+  - name: Auth
+    description: Login and logout
+  - name: Users
+    description: The current user
+  - name: Projects
+    description: Projects, dashboard data and progress
+  - name: Members
+    description: Project membership and roles
+  - name: Tasks
+    description: Tasks inside a project
+  - name: Assignees
+    description: Users responsible for a task
+  - name: Comments
+    description: Comments on a task
+
+security:
+  - sessionCookie: []
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in
+      description: |
+        Creates a session. Wrong password and unknown email give the same response (`401`).
+        The response never contains the password or its hash.
+      operationId: login
+      security:
+        - csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: ana@example.org
+              password: demo-password
+      responses:
+        '200':
+          description: Logged in. The session cookie is set.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Invalid email or password.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              example:
+                type: about:blank
+                title: Unauthorized
+                status: 401
+                detail: Invalid email or password.
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Log out
+      description: Invalidates the session; further requests with it get `401`.
+      operationId: logout
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      responses:
+        '204':
+          description: Logged out.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get the authenticated user
+      operationId: getCurrentUser
+      x-minimum-role: none
+      responses:
+        '200':
+          description: The authenticated user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /projects:
+    get:
+      tags: [Projects]
+      summary: List the projects the user has access to
+      description: |
+        Only projects where the user is a member. Each item includes the task counts per status
+        and the progress, which is what the dashboard shows. Counts cover all tasks of the
+        project. Sorted by name. Optional search by part of the name, ignoring letter case.
+      operationId: listProjects
+      x-minimum-role: VIEWER
+      parameters:
+        - name: search
+          in: query
+          description: Part of the project name, ignoring letter case.
+          schema:
+            type: string
+            maxLength: 100
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: A page of projects.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Projects]
+      summary: Create a project
+      description: The authenticated user becomes the project's only Owner.
+      operationId: createProject
+      x-minimum-role: none
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreate'
+            example:
+              name: Website redesign
+              description: New landing page and style guide.
+      responses:
+        '201':
+          description: Project created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /projects/{projectId}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    get:
+      tags: [Projects]
+      summary: Get a project
+      operationId: getProject
+      x-minimum-role: VIEWER
+      responses:
+        '200':
+          description: The project.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Projects]
+      summary: Edit a project's name or description
+      operationId: updateProject
+      x-minimum-role: OWNER
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectUpdate'
+      responses:
+        '200':
+          description: The updated project.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Projects]
+      summary: Delete a project
+      description: |
+        Permanent. Deletes the project's memberships, tasks, assignments and comments.
+        The client asks the user to confirm before calling this.
+      operationId: deleteProject
+      x-minimum-role: OWNER
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      responses:
+        '204':
+          description: Project deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /projects/{projectId}/progress-override:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    put:
+      tags: [Projects]
+      summary: Set the manual progress percentage
+      description: The manual value is shown instead of the computed one, labelled as manual.
+      operationId: setProgressOverride
+      x-minimum-role: OWNER
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgressOverrideRequest'
+            example:
+              percentage: 80
+      responses:
+        '200':
+          description: The project with the manual progress.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Projects]
+      summary: Clear the manual progress percentage
+      description: Progress goes back to the computed value.
+      operationId: clearProgressOverride
+      x-minimum-role: OWNER
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      responses:
+        '200':
+          description: The project with the computed progress.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /projects/{projectId}/members:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    get:
+      tags: [Members]
+      summary: List the project's members
+      description: |
+        Names, emails and roles. Not paginated: a project has few members. The client can use
+        this list, without Viewers, to offer the users who can be assigned to a task.
+      operationId: listMembers
+      x-minimum-role: VIEWER
+      responses:
+        '200':
+          description: The members, Owner first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Member'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Members]
+      summary: Add a member
+      description: |
+        Adds an existing user, found by email. There are no invitations. When no user has that
+        email the answer says so (`422`); this reveals whether an email is registered (accepted
+        risk A-22).
+      operationId: addMember
+      x-minimum-role: OWNER
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberAdd'
+            example:
+              email: rui@example.org
+              role: MEMBER
+      responses:
+        '201':
+          description: Member added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The user is already a member of the project.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: No user has that email.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+  /projects/{projectId}/members/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/UserId'
+    patch:
+      tags: [Members]
+      summary: Change a member's role
+      description: |
+        The Owner's role cannot be changed (`409`). A member who becomes a Viewer loses their
+        assignments in the project; the tasks remain.
+      operationId: changeMemberRole
+      x-minimum-role: OWNER
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberRoleChange'
+      responses:
+        '200':
+          description: The updated member.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The target is the project's Owner.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    delete:
+      tags: [Members]
+      summary: Remove a member
+      description: |
+        The member loses all access to the project and their assignments in it are removed.
+        Tasks and comments they wrote remain. The Owner cannot be removed (`409`).
+      operationId: removeMember
+      x-minimum-role: OWNER
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      responses:
+        '204':
+          description: Member removed.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The target is the project's Owner.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+  /projects/{projectId}/tasks:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    get:
+      tags: [Tasks]
+      summary: List a project's tasks
+      description: |
+        Newest first. Filters combine: only tasks matching all given filters are returned.
+        No match gives an empty page, not an error.
+      operationId: listTasks
+      x-minimum-role: VIEWER
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/TaskStatus'
+        - name: priority
+          in: query
+          schema:
+            $ref: '#/components/schemas/TaskPriority'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: A page of tasks.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Tasks]
+      summary: Create a task
+      description: |
+        Unless other valid values are given, the status is `TODO` and the priority `MEDIUM`.
+      operationId: createTask
+      x-minimum-role: MEMBER
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+            example:
+              title: Write the project brief
+              description: One page, for the client.
+              priority: HIGH
+      responses:
+        '201':
+          description: Task created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{taskId}:
+    parameters:
+      - $ref: '#/components/parameters/TaskId'
+    get:
+      tags: [Tasks]
+      summary: Get a task
+      operationId: getTask
+      x-minimum-role: VIEWER
+      responses:
+        '200':
+          description: The task with its assignees.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Tasks]
+      summary: Edit a task, or change its status or priority
+      description: Any status can change to any other, including reopening a `DONE` task.
+      operationId: updateTask
+      x-minimum-role: MEMBER
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+            example:
+              status: IN_PROGRESS
+      responses:
+        '200':
+          description: The updated task.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Tasks]
+      summary: Delete a task
+      description: Permanent. Deletes the task's assignments and comments.
+      operationId: deleteTask
+      x-minimum-role: MEMBER
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      responses:
+        '204':
+          description: Task deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{taskId}/assignees:
+    parameters:
+      - $ref: '#/components/parameters/TaskId'
+    post:
+      tags: [Assignees]
+      summary: Assign a user to a task
+      description: |
+        Only Owners and Members of the task's project can be assigned. Assigning a user who is
+        already assigned is refused (`409`).
+      operationId: assignUser
+      x-minimum-role: MEMBER
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssigneeAdd'
+            example:
+              userId: 12
+      responses:
+        '201':
+          description: The task with its updated assignees.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The user is already assigned to this task.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: The user does not exist, is not a member of the project, or is a Viewer.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+  /tasks/{taskId}/assignees/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/TaskId'
+      - $ref: '#/components/parameters/UserId'
+    delete:
+      tags: [Assignees]
+      summary: Unassign a user from a task
+      description: Only that assignment is removed. A task may end up with no assignee.
+      operationId: unassignUser
+      x-minimum-role: MEMBER
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      responses:
+        '204':
+          description: Assignment removed.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{taskId}/comments:
+    parameters:
+      - $ref: '#/components/parameters/TaskId'
+    get:
+      tags: [Comments]
+      summary: List a task's comments
+      description: Oldest first.
+      operationId: listComments
+      x-minimum-role: VIEWER
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: A page of comments.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Comments]
+      summary: Comment on a task
+      description: The author and the date are set by the server.
+      operationId: addComment
+      x-minimum-role: MEMBER
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentCreate'
+            example:
+              content: Waiting for the client's feedback.
+      responses:
+        '201':
+          description: Comment added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+      description: Session created by `POST /auth/login`.
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-XSRF-TOKEN
+      description: Value of the `XSRF-TOKEN` cookie. Required on requests that change data.
+
+  parameters:
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    TaskId:
+      name: taskId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    Page:
+      name: page
+      in: query
+      description: Page number, starting at 0.
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    Size:
+      name: size
+      in: query
+      description: Items per page.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  responses:
+    BadRequest:
+      description: Invalid input. `errors` names each invalid field.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: about:blank
+            title: Bad Request
+            status: 400
+            detail: Validation failed.
+            errors:
+              - field: title
+                message: Must be between 3 and 150 characters.
+    Unauthorized:
+      description: No valid session. The client sends the user to the login page.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Forbidden:
+      description: |
+        The user has access to the project but their role is too low for this operation, or
+        the CSRF token is missing or wrong.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: |
+        The resource does not exist, or the user has no access to its project.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+  schemas:
+    Id:
+      type: integer
+      format: int64
+      minimum: 1
+      examples: [42]
+
+    Role:
+      type: string
+      enum: [OWNER, MEMBER, VIEWER]
+    AssignableRole:
+      type: string
+      description: Roles that can be given to others. There is exactly one Owner, the creator.
+      enum: [MEMBER, VIEWER]
+    TaskStatus:
+      type: string
+      enum: [TODO, IN_PROGRESS, DONE]
+    TaskPriority:
+      type: string
+      enum: [LOW, MEDIUM, HIGH]
+
+    User:
+      type: object
+      required: [id, name, email]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+      example:
+        id: 7
+        name: Ana Silva
+        email: ana@example.org
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+          writeOnly: true
+
+    TaskCounts:
+      type: object
+      description: Number of tasks per status, over all tasks of the project.
+      required: [todo, inProgress, done, total]
+      properties:
+        todo:
+          type: integer
+          minimum: 0
+        inProgress:
+          type: integer
+          minimum: 0
+        done:
+          type: integer
+          minimum: 0
+        total:
+          type: integer
+          minimum: 0
+          description: Always the sum of the three counts above.
+
+    Progress:
+      type: object
+      required: [computed, manual, effective]
+      properties:
+        computed:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Tasks `DONE` divided by all tasks, rounded to the nearest whole number. 0 when there are no tasks.
+        manual:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 100
+          description: The Owner's manual value, or null when none is set.
+        effective:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: The value to display, `manual` when set, otherwise `computed`.
+
+    Project:
+      type: object
+      required: [id, name, description, myRole, taskCounts, progress, createdAt, updatedAt]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          type: string
+        description:
+          type: [string, 'null']
+        myRole:
+          $ref: '#/components/schemas/Role'
+        taskCounts:
+          $ref: '#/components/schemas/TaskCounts'
+        progress:
+          $ref: '#/components/schemas/Progress'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      example:
+        id: 3
+        name: Website redesign
+        description: New landing page and style guide.
+        myRole: OWNER
+        taskCounts: {todo: 4, inProgress: 2, done: 6, total: 12}
+        progress: {computed: 50, manual: null, effective: 50}
+        createdAt: '2026-11-14T10:00:00Z'
+        updatedAt: '2026-11-14T10:00:00Z'
+
+    ProjectCreate:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: 3 to 100 characters after trimming.
+        description:
+          type: [string, 'null']
+          maxLength: 1000
+
+    ProjectUpdate:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+        description:
+          type: [string, 'null']
+          maxLength: 1000
+
+    ProgressOverrideRequest:
+      type: object
+      required: [percentage]
+      additionalProperties: false
+      properties:
+        percentage:
+          type: integer
+          minimum: 0
+          maximum: 100
+
+    Member:
+      type: object
+      required: [userId, name, email, role, addedAt]
+      properties:
+        userId:
+          $ref: '#/components/schemas/Id'
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          $ref: '#/components/schemas/Role'
+        addedAt:
+          type: string
+          format: date-time
+
+    MemberAdd:
+      type: object
+      required: [email, role]
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        role:
+          $ref: '#/components/schemas/AssignableRole'
+
+    MemberRoleChange:
+      type: object
+      required: [role]
+      additionalProperties: false
+      properties:
+        role:
+          $ref: '#/components/schemas/AssignableRole'
+
+    Task:
+      type: object
+      required: [id, projectId, title, description, status, priority, assignees, createdAt, updatedAt]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        projectId:
+          $ref: '#/components/schemas/Id'
+        title:
+          type: string
+        description:
+          type: [string, 'null']
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+        assignees:
+          type: array
+          description: Empty when the task is unassigned.
+          items:
+            $ref: '#/components/schemas/User'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TaskCreate:
+      type: object
+      required: [title]
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 150
+          description: 3 to 150 characters after trimming.
+        description:
+          type: [string, 'null']
+          maxLength: 2000
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+
+    TaskUpdate:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 150
+        description:
+          type: [string, 'null']
+          maxLength: 2000
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+
+    AssigneeAdd:
+      type: object
+      required: [userId]
+      additionalProperties: false
+      properties:
+        userId:
+          $ref: '#/components/schemas/Id'
+
+    Comment:
+      type: object
+      required: [id, taskId, author, content, createdAt]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        taskId:
+          $ref: '#/components/schemas/Id'
+        author:
+          $ref: '#/components/schemas/User'
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CommentCreate:
+      type: object
+      required: [content]
+      additionalProperties: false
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: 1 to 2000 characters after trimming.
+
+    PageInfo:
+      type: object
+      required: [page, size, totalItems, totalPages]
+      properties:
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+        totalItems:
+          type: integer
+          minimum: 0
+          description: Number of items over all pages.
+        totalPages:
+          type: integer
+          minimum: 0
+
+    ProjectPage:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Project'
+    TaskPage:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+    CommentPage:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      allOf:
+        - $ref: '#/components/schemas/PageInfo'
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+
+    Problem:
+      type: object
+      description: Problem Details (RFC 9457). Contains no internal information.
+      required: [title, status]
+      properties:
+        type:
+          type: string
+          default: about:blank
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        errors:
+          type: array
+          description: Present on validation errors (`400`).
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+              message:
+                type: string

@@ -48,7 +48,7 @@ If time runs short, US-08 and US-10 are the first to drop.
 
 - **AC-02.1.** Given a logged-in user, when they submit a name of 3–100 characters (and optionally a description up to 1000), then the project is created and they are its **Owner**.
 - **AC-02.2.** Given the create form, when the name is empty, whitespace-only, or outside 3–100 characters, or the description exceeds 1000, then it is rejected with a message and nothing is saved.
-- **AC-02.3.** Given a create request, when it contains an owner identifier, then it is ignored: the server sets the owner from the session.
+- **AC-02.3.** Given a create request, when it contains an owner identifier (or any other field that is not part of the contract), then it is refused with `400`: the server sets the owner from the session.
 - **AC-02.4.** Given a project's Owner, when they edit its name or description with valid values, then the change is saved and visible after a reload.
 - **AC-02.5.** Given a Member or Viewer, when they try to edit the project (including a direct API call), then it is refused with `403`.
 
@@ -116,7 +116,7 @@ If time runs short, US-08 and US-10 are the first to drop.
 
 - **AC-08.1.** Given an Owner or Member, when they submit a comment of 1–2000 characters, then it is saved and listed with its author and date.
 - **AC-08.2.** Given the form, when the comment is empty or whitespace-only, or over 2000 characters, then it is rejected and nothing is saved.
-- **AC-08.3.** Given a comment request, when it contains an author or date, then these are ignored: the server uses the session user and the current time.
+- **AC-08.3.** Given a comment request, when it contains an author or date (or any other field that is not part of the contract), then it is refused with `400`: the server uses the session user and the current time.
 - **AC-08.4.** Given a reopened task, when its comments are listed, then all of them are still there, oldest first.
 - **AC-08.5.** Given the author of a comment is later removed from the project, when the comments are listed, then the comment remains with the author's name.
 - **AC-08.6.** Given a Viewer, when they try to comment (including by direct API call), then it is refused with `403`.
