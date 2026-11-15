@@ -6,7 +6,7 @@ This is the conceptual and logical model for PostgreSQL. It contains no SQL: the
 
 ## 1. Entities
 
-Types are conceptual. Limits come from assumption A-13 and apply to the **trimmed** value, counted in characters.
+Types are conceptual. Limits come from assumption A-13 and apply to the **trimmed** value, counted in characters. The value stored is the trimmed one.
 
 ### users (owned by the identity module)
 
@@ -14,7 +14,7 @@ Types are conceptual. Limits come from assumption A-13 and apply to the **trimme
 |---|---|---|---|
 | id | number | PK, generated | Identifier. |
 | name | text | required, 1–100 | Display name. |
-| email | text | required, unique ignoring letter case | Login name and the way an Owner finds a user to add. |
+| email | text | required, up to 254, unique ignoring letter case | Login name and the way an Owner finds a user to add. |
 | password_hash | text | required | Salted BCrypt hash (S-04). Never returned by the API. |
 | created_at | timestamp with time zone | required | Creation time. |
 
@@ -24,7 +24,7 @@ Types are conceptual. Limits come from assumption A-13 and apply to the **trimme
 |---|---|---|---|
 | id | number | PK, generated | Identifier. |
 | name | text | required, 3–100 | Project name (FR-05). |
-| description | text | optional, up to 1000 | Project description. |
+| description | text | optional, up to 1000; empty or whitespace-only is stored as null | Project description. |
 | progress_override | whole number | optional, 0–100 | Manual progress set by the Owner (FR-25). Empty means "use the computed value". |
 | created_at | timestamp with time zone | required | Creation time. |
 | updated_at | timestamp with time zone | required | Last change. |
@@ -47,7 +47,7 @@ Links users to projects and holds the role. **The Owner is also a row here**, wi
 | id | number | PK, generated | Identifier. |
 | project_id | number | required, FK to projects | The one project the task belongs to (A-08). |
 | title | text | required, 3–150 | Task title (FR-14). |
-| description | text | optional, up to 2000 | Task description. |
+| description | text | optional, up to 2000; empty or whitespace-only is stored as null | Task description. |
 | status | text | required, one of `TODO`, `IN_PROGRESS`, `DONE`; default `TODO` | Task status (A-09). |
 | priority | text | required, one of `LOW`, `MEDIUM`, `HIGH`; default `MEDIUM` | Task priority (A-09). |
 | created_at | timestamp with time zone | required | Creation time. |
@@ -182,7 +182,7 @@ In the diagram, an assignment refers to a **membership** (project_id and user_id
 |---|---|---|
 | A new project gets its Owner row in the **same transaction** as the project | Project service | FR-05, AC-02.1 |
 | The Owner cannot be removed or demoted; no ownership transfer | Project service | FR-13, AC-03.6 |
-| A member **demoted to Viewer** loses their assignments in that project | Project service (the role is still a membership, so no cascade happens) | FR-11, AC-03.8 |
+| A member **demoted to Viewer** loses their assignments in that project | Task module, reacting to an event published by the project module (the membership row stays, so no cascade happens; see [architecture.md](architecture.md), section 5) | FR-11, AC-03.8 |
 | Viewers cannot be assigned to tasks | Task service (the database only knows the user is a member) | FR-20, AC-07.4 |
 | Who may do what according to the role | The access policy (architecture.md, section 5) | permission matrix |
 | Trimming of Unicode whitespace; the progress percentage rounding | Services | NFR-04, FR-24 |
@@ -215,12 +215,14 @@ In the diagram, an assignment refers to a **membership** (project_id and user_id
 |---|---|
 | users | FR-01 to FR-04; US-01; S-04 |
 | projects | FR-05 to FR-09, FR-24, FR-25; US-02, US-10, US-11 |
-| project_members | FR-10 to FR-13; US-03; the permission matrix |
-| tasks | FR-14 to FR-18, FR-23; US-04, US-05, US-06, US-09 |
+| project_members | FR-10 to FR-13, FR-27; US-03; the permission matrix |
+| tasks | FR-14 to FR-18, FR-23, FR-26; US-04, US-05, US-06, US-09 |
 | task_assignments | FR-19, FR-20; US-07 |
 | comments | FR-21, FR-22; US-08 |
 
 ## 8. Assumptions and pending points
+
+The assumptions below are also registered as A-23 to A-25 in [constraints.md](constraints.md).
 
 - **Deleting users is out of scope** (no requirement mentions it). Because the foreign keys prevent it while related data exists, there is no accidental data loss, but there is also no way to remove a user. Deleting a user would also raise the privacy questions listed in A-21.
 - **Letter-case rules for emails** are decided here as "case-insensitive", an assumption not stated in the requirements.

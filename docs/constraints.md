@@ -33,10 +33,10 @@ Every assumption is open until the client confirms it. "Origin" says why we made
 | A-07 | There is no global administrator and no external or guest users. A user who leaves the organisation keeps access until each project Owner removes them (accepted risk). | Analysis | Someone must be able to manage users, cut off departed users and recover orphaned projects. |
 | A-08 | A task belongs to exactly one project. Standalone tasks and tasks shared between projects do not exist. | Analysis | Reshaping the data model and the permission rules later. |
 | A-09 | Task statuses are `TODO`, `IN_PROGRESS`, `DONE`, with any change allowed (including reopening). Priorities are `LOW`, `MEDIUM`, `HIGH`. New tasks start as `TODO` and `MEDIUM` unless the creator chooses other values. There are no approvals and no blocked or cancelled states. | Analysis, course hint | The real workflow may need more states or rules. |
-| A-10 | Progress means task counts per status, plus a percentage computed as `DONE ÷ total`, rounded to the nearest whole number. The Owner can override the percentage manually; the computed value stays visible. The percentage ignores effort, so it can mislead. | Analysis | Teams may measure progress differently (effort, time, milestones). |
+| A-10 | Progress means task counts per status, plus a percentage computed as `DONE ÷ total`, rounded to the nearest whole number, halves rounded up. The Owner can override the percentage manually; the computed value stays visible. The percentage ignores effort, so it can mislead. | Analysis | Teams may measure progress differently (effort, time, milestones). |
 | A-11 | A task can have zero, one or several assignees; only Owners and Members can be assigned. Removing a user from a project, or demoting them to Viewer, removes their assignments but keeps the tasks. Comments by a removed user stay, showing their name. | Analysis | Data or history expectations may differ. |
 | A-12 | Expected capacity is small: tens of users, hundreds of projects, thousands of tasks. No response-time or availability targets are set. | Analysis | Design may not scale to a bigger customer. |
-| A-13 | Field limits: project name 3–100 characters, project description up to 1000, task title 3–150, task description up to 2000, comment 1–2000. Limits apply to the trimmed value, counted in characters. | Course hint | Limits too tight or loose for real use. |
+| A-13 | Field limits: project name 3–100 characters, project description up to 1000, task title 3–150, task description up to 2000, comment 1–2000. Limits apply to the trimmed value, counted in characters; the stored value is the trimmed one, and an empty description is stored as null. | Course hint | Limits too tight or loose for real use. |
 | A-14 | Deletion is permanent, after a confirmation. Deleting a project deletes its tasks, comments, assignments and memberships. There is no archive or undo. | Analysis | Accidental data loss; some teams need archiving. |
 | A-15 | There are no integrations: no import, export, email, single sign-on or external APIs. | Analysis | Migration from existing tools would be manual. |
 | A-16 | Accounts are created by seeded demo data. There is no public registration and no password recovery. Demo accounts and their passwords are for development only and must not exist in any real deployment. | Course hint | Real use needs account management. |
@@ -46,6 +46,9 @@ Every assumption is open until the client confirms it. "Origin" says why we made
 | A-20 | Scope exclusions: no task deadlines, subtasks, dependencies or tags; no board or calendar views; no notifications or activity history; no two-factor authentication; no project archiving or ownership transfer (full list in [requirements.md](requirements.md), section 6). | Analysis | Some of these may turn out to be expected by the client. |
 | A-21 | The MVP runs on fictional demo data only. Privacy-regulation tooling (data export, deletion on request, consent) is therefore out of scope; real personal data would require it first. | Analysis | Real data used without that tooling would be non-compliant. |
 | A-22 | When an Owner adds a member by email, the application says clearly when no user has that email. This lets any user learn whether an email is registered; accepted because there is one organisation (A-03) and everyone with an account is a colleague. | Analysis | In a service open to strangers this would be an account-enumeration leak. |
+| A-23 | Email addresses are compared ignoring letter case: two addresses that differ only in case are the same account. | Analysis | A user could expect case-sensitive addresses; very unlikely. |
+| A-24 | Project names do not need to be unique: two projects may have the same name. | Analysis | Users may confuse projects with identical names. |
+| A-25 | Deleting a user account is out of scope: there is no requirement for it, so there is no way to remove a user. | Analysis | Real use would need it, together with the privacy tooling excluded in A-21. |
 
 ## 3. Security and privacy requirements
 
@@ -61,7 +64,7 @@ These apply to the application (see also NFR-01 to NFR-05 in [requirements.md](r
 | S-04 | Passwords are stored only as salted hashes and are never returned by any endpoint or written to logs. |
 | S-05 | All input is validated on the server (type, length, allowed values, whitespace-only). Error responses do not reveal internals (stack traces, SQL, file paths). |
 | S-06 | The same generic message is returned for a wrong password and an unknown email. |
-| S-07 | Personal data is limited to name and email. It is visible only to users who share a project with that person. |
+| S-07 | Personal data is limited to name and email. It is visible only to users who share a project with that person. The one exception is the name (never the email) of a comment's author after they have left the project. |
 | S-08 | Configuration and secrets come from environment variables. The repository contains only an example file with fictional values; real values stay out of version control. |
 | S-09 | Dependencies come from trusted sources and are checked for known vulnerabilities before delivery. |
 | S-14 | Passwords have a minimum length of 8 characters. |
@@ -88,7 +91,7 @@ The decisions and their reasons are recorded in [architecture.md](architecture.m
 | Backend | Java (21 or later LTS) with Spring Boot, built with Maven | Chosen by the developer. |
 | Frontend | React with TypeScript, Vite and React Router | Chosen by the developer. |
 | Database | PostgreSQL, schema managed with Flyway migrations | Chosen by the developer. |
-| Architecture style | Modular monolith, organised by domain (identity, project, task, comment, progress) | Compared with monolith and microservices in architecture.md, section 2. |
+| Architecture style | Modular monolith, organised by domain (identity, project, task, comment) | Compared with monolith and microservices in architecture.md, section 2. |
 | Interface | REST API at `/api/v1`, described with OpenAPI 3.1, paginated lists, standard Problem Details errors | Course requirement and developer decision. |
 | Authentication | Server-side session in an HTTP-only cookie; BCrypt, minimum password length 8; 30 minutes of inactivity; HTTPS outside local development | Resolves S-14 to S-16. |
 | Identifiers | Numeric, generated by the database | Access control never relies on hard-to-guess identifiers. |
@@ -99,7 +102,7 @@ The decisions and their reasons are recorded in [architecture.md](architecture.m
 
 - Container layout and continuous integration setup (delivery stage, Ficha 05).
 - Exact wording of the UI messages and the detailed visual design (the wireframes fix only the structure; the style direction is in section 4.1).
-- Everything listed under assumptions A-01 to A-22 remains unconfirmed by the client.
+- Everything listed under assumptions A-01 to A-25 remains unconfirmed by the client.
 
 ## 5. Acceptance checklist (A-18)
 

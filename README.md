@@ -40,11 +40,12 @@ What is *not* in the MVP (sprints, notifications, attachments, integrations, and
 | [docs/requirements.md](docs/requirements.md) | Vision, users and roles, functional and non-functional requirements, MVP scope, out of scope. |
 | [docs/user-stories.md](docs/user-stories.md) | User stories with priorities, acceptance criteria and edge cases. |
 | [docs/constraints.md](docs/constraints.md) | Constraints, assumptions, security and privacy requirements, pending technical decisions. |
-| [docs/architecture.md](docs/architecture.md) | Architecture decision (modular monolith), technology choices, components, authorisation approach. |
-| [docs/review-log.md](docs/review-log.md) | Critical review of the specification: findings and the decision taken on each, plus the prompt comparison from Exercise 1. |
+| [docs/architecture.md](docs/architecture.md) | Architecture decision (modular monolith), technology choices, components, order of access checks. |
+| [docs/database.md](docs/database.md) | Data model: entities, relationships, integrity rules and the ER diagram. |
+| [openapi.yaml](openapi.yaml) | REST API contract of the MVP (OpenAPI 3.1). |
+| [docs/ui/](docs/ui/) | Low-fidelity wireframes: dashboard, project detail, task detail. |
+| [docs/review-log.md](docs/review-log.md) | Critical reviews of the specification and of the architecture pack: findings and the decision taken on each, plus the prompt comparison from Exercise 1. |
 | [AGENTS.md](AGENTS.md) | Persistent instructions for AI coding agents working on this repository. |
-
-Architecture, data model and API contract will be added in the next stage.
 
 ## Technology
 
@@ -52,6 +53,6 @@ Java with Spring Boot (backend), React with TypeScript (frontend), PostgreSQL (d
 
 ## Current status
 
-**Stage: specification.** The Specification Pack (requirements, user stories, constraints, agent instructions) is drafted and under review. There is no application code yet, so there is nothing to install or run. Installation, configuration and test instructions will be added when the implementation exists.
+**Stage: architecture and design done; implementation not started.** The Specification Pack (requirements, user stories, constraints, agent instructions) and the Architecture Pack (architecture, data model, API contract, wireframes) are written and have each been through an independent review. There is no application code yet, so there is nothing to install or run. Installation, configuration and test instructions will be added when the implementation exists.
 
-Next stages: architecture and design, MVP implementation, testing and review, containerisation and delivery.
+Next stages: MVP implementation, testing and review, containerisation and delivery.

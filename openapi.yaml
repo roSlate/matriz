@@ -13,8 +13,10 @@ info:
     Every operation except login requires a valid session.
 
     **CSRF.** Requests that change data (POST, PUT, PATCH, DELETE) must send the header
-    `X-XSRF-TOKEN` with the value of the `XSRF-TOKEN` cookie, which the API sets on its responses.
-    A missing or wrong token is refused with `403`.
+    `X-XSRF-TOKEN` with the value of the `XSRF-TOKEN` cookie. The API sets that cookie on every
+    response, including a `401`, so a client calls `GET /users/me` when it starts and then has the
+    token before it logs in. A missing or wrong token is refused with `403` and the error code
+    `CSRF_TOKEN_INVALID`.
 
     **Roles.** Access is decided per project: `OWNER`, `MEMBER` or `VIEWER` (see the permission
     matrix in `docs/requirements.md`). Each operation states its minimum role in `x-minimum-role`.
@@ -23,10 +25,19 @@ info:
     - `401`: no valid session.
     - `404`: the project, or the task or comment inside it, does not exist **or the user has no
       access to its project**. The two cases are deliberately indistinguishable.
-    - `403`: the user has access but their role is too low for the operation.
+    - `403`: the user has access but their role is too low for the operation (error code
+      `ROLE_INSUFFICIENT`), or the CSRF token is missing or wrong.
+
+    **Order of checks.** First the access step (no such resource, or no access: `404`), then the
+    body is parsed and validated (`400`), then the role is checked (`403`). A non-member therefore
+    gets `404` even for a malformed body.
 
     **Validation.** String limits apply to the *trimmed* value, counted in characters.
-    Whitespace-only values count as empty. Invalid input gives `400` with a list of field errors.
+    Whitespace-only values count as empty. The `minLength` and `maxLength` in the schemas
+    describe the trimmed value: the server trims first and stores the trimmed value, so clients
+    and generated validators must not enforce these limits on the raw text. Invalid input gives
+    `400` with a list of field errors. A path identifier that is not a positive integer also
+    gives `400`.
 
     **Errors.** All errors use the Problem Details format (RFC 9457, `application/problem+json`)
     and never contain stack traces, SQL, file paths or internal names.
@@ -146,9 +157,9 @@ paths:
       description: |
         Only projects where the user is a member. Each item includes the task counts per status
         and the progress, which is what the dashboard shows. Counts cover all tasks of the
-        project. Sorted by name. Optional search by part of the name, ignoring letter case.
+        project. Newest first. Optional search by part of the name, ignoring letter case.
       operationId: listProjects
-      x-minimum-role: VIEWER
+      x-minimum-role: none
       parameters:
         - name: search
           in: query
@@ -410,7 +421,8 @@ paths:
       summary: Change a member's role
       description: |
         The Owner's role cannot be changed (`409`). A member who becomes a Viewer loses their
-        assignments in the project; the tasks remain.
+        assignments in the project; the tasks remain. A user who is not a member of the project
+        gives `404`.
       operationId: changeMemberRole
       x-minimum-role: OWNER
       security:
@@ -448,7 +460,8 @@ paths:
       summary: Remove a member
       description: |
         The member loses all access to the project and their assignments in it are removed.
-        Tasks and comments they wrote remain. The Owner cannot be removed (`409`).
+        Tasks and comments they wrote remain. The Owner cannot be removed (`409`). A user who is
+        not a member of the project gives `404`.
       operationId: removeMember
       x-minimum-role: OWNER
       security:
@@ -668,7 +681,9 @@ paths:
     delete:
       tags: [Assignees]
       summary: Unassign a user from a task
-      description: Only that assignment is removed. A task may end up with no assignee.
+      description: |
+        Only that assignment is removed. A task may end up with no assignee. A user who is not
+        assigned to the task gives `404`.
       operationId: unassignUser
       x-minimum-role: MEMBER
       security:
@@ -690,7 +705,9 @@ paths:
     get:
       tags: [Comments]
       summary: List a task's comments
-      description: Oldest first.
+      description: |
+        Oldest first, 20 per page by default. The interface offers a "Show more" control when
+        there are more comments than the page holds.
       operationId: listComments
       x-minimum-role: VIEWER
       parameters:
@@ -858,6 +875,7 @@ components:
           $ref: '#/components/schemas/Id'
         name:
           type: string
+          maxLength: 100
         email:
           type: string
           format: email
@@ -866,9 +884,23 @@ components:
         name: Ana Silva
         email: ana@example.org
 
+    UserRef:
+      type: object
+      description: |
+        A user as shown next to a comment: name only, no email. A comment keeps its author's
+        name after the author has left the project, so the email must not travel with it.
+      required: [id, name]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          type: string
+          maxLength: 100
+
     LoginRequest:
       type: object
       required: [email, password]
+      additionalProperties: false
       properties:
         email:
           type: string
@@ -1105,7 +1137,7 @@ components:
         taskId:
           $ref: '#/components/schemas/Id'
         author:
-          $ref: '#/components/schemas/User'
+          $ref: '#/components/schemas/UserRef'
         content:
           type: string
         createdAt:
@@ -1186,6 +1218,11 @@ components:
           type: integer
         detail:
           type: string
+        code:
+          type: string
+          description: |
+            Machine-readable reason when the status alone is ambiguous, for example
+            `CSRF_TOKEN_INVALID` or `ROLE_INSUFFICIENT` (both `403`).
         errors:
           type: array
           description: Present on validation errors (`400`).

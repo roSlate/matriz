@@ -93,7 +93,7 @@
   <text x="490" y="511" font-size="13" fill="#222">Ana</text>
 
   <!-- Pagination -->
-  <text x="40" y="553" font-size="13" fill="#222">Showing 4 of 12 tasks</text>
+  <text x="40" y="553" font-size="13" fill="#222">Showing 4 of 12 tasks (sample page size: 4)</text>
   <rect x="420" y="536" width="60" height="24" rx="4" fill="#f7f7f7" stroke="#999"/>
   <text x="450" y="553" font-size="13" text-anchor="middle" fill="#999">Prev</text>
   <text x="520" y="553" font-size="13" text-anchor="middle" fill="#222">Page 1 of 3</text>
@@ -171,7 +171,7 @@
     <text x="954" y="291" fill="#555">FR-18, AC-09.2; status and priority combine</text>
     <text x="936" y="310"><tspan font-weight="bold">8</tspan>  Task list</text>
     <text x="954" y="325" fill="#555">Title, status, priority, assignees; a row opens</text>
-    <text x="954" y="339" fill="#555">the task detail (assignees and comments; not drawn)</text>
+    <text x="954" y="339" fill="#555">the task detail (see task-detail-wireframe)</text>
     <text x="936" y="358"><tspan font-weight="bold">9</tspan>  Members and roles</text>
     <text x="954" y="373" fill="#555">FR-10 to FR-13; Owner changes a role or removes</text>
     <text x="936" y="392"><tspan font-weight="bold">10</tspan>  Add a member by email</text>

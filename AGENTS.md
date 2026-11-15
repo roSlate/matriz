@@ -23,7 +23,7 @@ If a document you need does not exist or is unclear, say so and ask. Do not fill
 
 ## Rules
 
-1. **Respect the documents.** The trusted project documents are this file, `README.md` and the files under `docs/` in this repository, as reviewed by the developer. Their requirements, acceptance criteria and constraints come before your own preferences. If they conflict with each other or with the request, stop and report the conflict.
+1. **Respect the documents.** The trusted project documents are this file, `README.md`, `openapi.yaml` and the files under `docs/` in this repository, as reviewed by the developer. Their requirements, acceptance criteria and constraints come before your own preferences. If they conflict with each other or with the request, stop and report the conflict.
 2. **Do not invent.** Do not add features, rules, requirements or technical decisions that are not documented or approved. Items marked as assumptions or pending in `docs/constraints.md` are not decisions. Propose them instead.
 3. **Plan before significant changes.** For anything beyond a small, local edit, present a plan first: what will change, which files, and how it will be verified. Wait for approval.
 4. **Stay in scope.** Change only the files the task needs. Do not reformat, rename, reorganise or "improve" unrelated code or documents. Mention unrelated problems you notice instead of fixing them.

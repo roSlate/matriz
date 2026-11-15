@@ -74,12 +74,14 @@ Priority: **M** = Must, **S** = Should (see MVP scope in section 5). The "Need" 
 | FR-11 | The Owner can change a member's role. If a member becomes a Viewer, their assignments in the project are removed. | M | teams |
 | FR-12 | The Owner can remove a member. Their assignments in the project are removed; tasks and comments remain. | M | teams |
 | FR-13 | The Owner cannot be removed or demoted (one Owner per project, no transfer in the MVP). | M | teams |
+| FR-27 | A user with access to a project can see its member list (names, emails and roles). | M | teams |
 | **Tasks** | | | |
 | FR-14 | An Owner or Member can create a task in a project (title 3–150 characters; description up to 2000, optional). Unless the creator chooses other valid values, the status is TODO and the priority MEDIUM. | M | manage tasks |
 | FR-15 | A task belongs to exactly one project. | M | manage tasks |
 | FR-16 | An Owner or Member can edit a task and change its status (TODO, IN_PROGRESS, DONE; any change allowed, including reopening) and priority (LOW, MEDIUM, HIGH). | M | manage tasks |
 | FR-17 | An Owner or Member can delete a task. | M | manage tasks |
 | FR-18 | A user can filter a project's tasks by status and by priority, alone or combined. | S | manage tasks |
+| FR-26 | A user with access to a project can open one of its tasks and see its details, including its assignees. | M | manage tasks |
 | **Assignees** | | | |
 | FR-19 | An Owner or Member can assign several users to a task, and unassign each. A task may have no assignee. | S | manage tasks |
 | FR-20 | Only Owners and Members of the project can be assigned; the same user cannot be assigned twice to a task. | S | manage tasks |
@@ -88,7 +90,7 @@ Priority: **M** = Must, **S** = Should (see MVP scope in section 5). The "Need" 
 | FR-22 | A user with access can list a task's comments with author and date. Comments remain if the author is later removed from the project. | S | teams |
 | **Progress** | | | |
 | FR-23 | The dashboard shows the user's accessible projects and, for each, the number of tasks per status, with navigation to the project. | M | track progress |
-| FR-24 | Each project shows a computed progress percentage: tasks DONE ÷ total tasks, rounded to the nearest whole number (0 % if there are no tasks). | M | track progress |
+| FR-24 | Each project shows a computed progress percentage: tasks DONE ÷ total tasks, rounded to the nearest whole number, halves rounded up (0 % if there are no tasks). | M | track progress |
 | FR-25 | The Owner can set a manual progress percentage (a whole number from 0 to 100) for a project, or clear it to return to the computed value. A manual value is always labelled as such, with the computed value shown alongside. | S | track progress |
 
 ## 4. Non-functional requirements
@@ -98,8 +100,8 @@ Priority: **M** = Must, **S** = Should (see MVP scope in section 5). The "Need" 
 | NFR-01 | Security | Authorisation is enforced on the server for every request, including direct API calls; changing an identifier in a request must not grant access to other users' data. |
 | NFR-02 | Security | Passwords are stored only as salted hashes. No real credentials in the repository; demo data is fictional. |
 | NFR-03 | Security | The server decides who the project owner and comment author are; clients cannot supply them. |
-| NFR-04 | Validation | All input is validated on the server; invalid input is rejected with a clear message and nothing is saved. Limits apply to the trimmed value, counted in characters; whitespace-only values count as empty. |
-| NFR-05 | Privacy | Personal data is limited to name and email, shown only to users who share a project. Whether an email is registered can still be learned when adding a member (accepted risk, A-22). |
+| NFR-04 | Validation | All input is validated on the server; invalid input is rejected with a clear message and nothing is saved. Limits apply to the trimmed value, counted in characters; whitespace-only values count as empty. The stored value is the trimmed one. |
+| NFR-05 | Privacy | Personal data is limited to name and email, shown only to users who share a project (the one exception: a comment keeps its author's name, never the email, after the author has left the project). Whether an email is registered can still be learned when adding a member (accepted risk, A-22). |
 | NFR-06 | Persistence | Data survives page reloads and backend restarts. |
 | NFR-07 | Usability | The UI handles loading, empty, success and error states; keeps typed input when a submission fails; prevents duplicate submissions; works from a minimum screen width of 360 px upwards. |
 | NFR-08 | Consistency | Lists, filters and counts update after each create, edit or delete made by the user, without a manual reload. Changes made by other users appear on the next load or navigation (no live updates). Totals reflect the whole data set, not only the visible page. |
@@ -111,7 +113,7 @@ Priority: **M** = Must, **S** = Should (see MVP scope in section 5). The "Need" 
 
 **In the MVP**
 
-- **Must:** FR-01 to FR-07, FR-10 to FR-17, FR-23, FR-24.
+- **Must:** FR-01 to FR-07, FR-10 to FR-17, FR-23, FR-24, FR-26, FR-27.
 - **Should:** FR-08, FR-09, FR-18 to FR-22, FR-25.
 
 The MVP is deliberately at the upper limit of what can be delivered. If time runs short, the first items to drop are comments (FR-21, FR-22) and the progress override (FR-25). A dropped story is recorded by moving it to the out-of-scope list below, with the reason; the acceptance checklist in [constraints.md](constraints.md), section 5, then applies to the remaining scope.
@@ -141,9 +143,9 @@ These exclusions are registered as assumption A-20 in [constraints.md](constrain
 |---|---|
 | FR-01 to FR-04 | US-01 |
 | FR-05 to FR-07 | US-02 |
-| FR-10 to FR-13 | US-03 |
+| FR-10 to FR-13, FR-27 | US-03 |
 | FR-14, FR-15 | US-04 |
-| FR-16, FR-17 | US-05 |
+| FR-16, FR-17, FR-26 | US-05 |
 | FR-23, FR-24 | US-06 |
 | FR-19, FR-20 | US-07 |
 | FR-21, FR-22 | US-08 |
