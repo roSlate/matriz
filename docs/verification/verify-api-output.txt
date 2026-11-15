@@ -1,0 +1,102 @@
+database counts before (users|projects|memberships|tasks|assignments|comments): 3|3|6|18|4|3
+case 01 | request without a session is refused                                           | expected 401        got 401        OK 
+case 01 | project list without a session is refused                                      | expected 401        got 401        OK 
+case 01 | wrong password is refused                                                      | expected 401        got 401        OK 
+case 01 | unknown email is refused                                                       | expected 401        got 401        OK 
+case 01 | both refusals carry the same message                                           | expected True       got True       OK 'Invalid email or password.'
+case 01 | valid login: /users/me answers 200                                             | expected 200        got 200        OK 
+case 01 | the profile has no password or hash                                            | expected True       got True       OK 
+case 01 | login without the CSRF token is refused                                        | expected 403        got 403        OK 
+case 01 | logout                                                                         | expected 204        got 204        OK 
+case 01 | the old session no longer works                                                | expected 401        got 401        OK 
+case 02 | create a project                                                               | expected 201        got 201        OK 
+case 02 | the creator is the Owner and the name is trimmed                               | expected ('OWNER', 'QA verification project') got ('OWNER', 'QA verification project') OK 
+case 02 | owner supplied by the client is refused                                        | expected 400        got 400        OK 
+case 02 | search finds it by part of the name                                            | expected 12         got 12         OK 
+case 02 | a user without access does not see it in the search                            | expected 0          got 0          OK 
+case 02 | add Rui as Member                                                              | expected 201        got 201        OK 
+case 02 | add Sofia as Viewer                                                            | expected 201        got 201        OK 
+case 02 | the Owner edits the project                                                    | expected 200        got 200        OK 
+case 02 | a Member cannot edit the project                                               | expected 403        got 403        OK 
+case 02 | a Viewer cannot edit the project                                               | expected 403        got 403        OK 
+case 02 | a Member cannot delete the project                                             | expected 403        got 403        OK 
+case 04 | project: empty name                                                            | expected 400        got 400        OK 
+case 04 | project: spaces-only name                                                      | expected 400        got 400        OK 
+case 04 | project: 2-character name                                                      | expected 400        got 400        OK 
+case 04 | project: 101-character name                                                    | expected 400        got 400        OK 
+case 04 | project: 1001-character description                                            | expected 400        got 400        OK 
+case 04 | project: number as name                                                        | expected 400        got 400        OK 
+case 04 | no project was created by the invalid requests                                 | expected 4          got 4          OK 
+case 04 | task: empty title                                                              | expected 400        got 400        OK 
+case 04 | task: spaces-only title                                                        | expected 400        got 400        OK 
+case 04 | task: 2-character title                                                        | expected 400        got 400        OK 
+case 04 | task: 151-character title                                                      | expected 400        got 400        OK 
+case 04 | task: 2001-character description                                               | expected 400        got 400        OK 
+case 04 | task: invalid status                                                           | expected 400        got 400        OK 
+case 04 | task: invalid priority                                                         | expected 400        got 400        OK 
+case 04 | no task was created by the invalid requests                                    | expected 0          got 0          OK 
+case 03 | create a task                                                                  | expected 201        got 201        OK 
+case 03 | defaults are TODO and MEDIUM, the title is trimmed                             | expected ('TODO', 'MEDIUM', 'First verification task') got ('TODO', 'MEDIUM', 'First verification task') OK 
+case 03 | the task is in the list straight away, exactly once                            | expected [35]       got [35]       OK 
+case 05 | counts before the edit (todo, in progress, done)                               | expected (2, 1, 0)  got (2, 1, 0)  OK 
+case 05 | a Member sets the status to DONE                                               | expected 200        got 200        OK 
+case 05 | counts follow the edit                                                         | expected (1, 1, 1, 3) got (1, 1, 1, 3) OK 
+case 05 | computed progress is 1 of 3 = 33 %                                             | expected 33         got 33         OK 
+case 05 | the DONE filter shows exactly the edited task                                  | expected [35]       got [35]       OK 
+case 05 | status and priority filters combine                                            | expected [36]       got [36]       OK 
+case 05 | a DONE task can be reopened                                                    | expected 200        got 200        OK 
+case 05 | a Viewer cannot change a task                                                  | expected 403        got 403        OK 
+case 06 | assign Rui                                                                     | expected 201        got 201        OK 
+case 06 | assign Ana (several assignees)                                                 | expected 201        got 201        OK 
+case 06 | both are assignees                                                             | expected ['Ana Silva', 'Rui Costa'] got ['Ana Silva', 'Rui Costa'] OK 
+case 06 | the same assignment twice is refused                                           | expected 409        got 409        OK 
+case 06 | no duplicate row                                                               | expected 2          got 2          OK 
+case 06 | a Viewer cannot be assigned                                                    | expected 422        got 422        OK 
+case 06 | a Viewer cannot assign                                                         | expected 403        got 403        OK 
+case 06 | unassign Rui                                                                   | expected 204        got 204        OK 
+case 06 | only Ana remains                                                               | expected ['Ana Silva'] got ['Ana Silva'] OK 
+case 07 | a Member comments                                                              | expected 201        got 201        OK 
+case 07 | author is the session user, text trimmed, date set by the server               | expected ('Rui Costa', 'Looks good to me.', True) got ('Rui Costa', 'Looks good to me.', True) OK 
+case 07 | a client-supplied author is refused                                            | expected 400        got 400        OK 
+case 07 | a spaces-only comment is refused                                               | expected 400        got 400        OK 
+case 07 | a 2001-character comment is refused                                            | expected 400        got 400        OK 
+case 07 | a Viewer cannot comment                                                        | expected 403        got 403        OK 
+case 07 | a Viewer can read the comment, with the author's name and no email             | expected (1, True)  got (1, True)  OK 
+case 08 | (setup) Sofia creates a task in her private project                            | expected 201        got 201        OK 
+case 08 | Ana (no access) tries to read the other project                                | expected 404        got 404        OK 
+case 08 | Ana (no access) tries to list its tasks                                        | expected 404        got 404        OK 
+case 08 | Ana (no access) tries to list its members                                      | expected 404        got 404        OK 
+case 08 | Ana (no access) tries to edit it                                               | expected 404        got 404        OK 
+case 08 | Ana (no access) tries to delete it                                             | expected 404        got 404        OK 
+case 08 | Ana (no access) tries to set its manual progress                               | expected 404        got 404        OK 
+case 08 | Ana (no access) tries to add a member to it                                    | expected 404        got 404        OK 
+case 08 | Ana (no access) tries to create a task in it                                   | expected 404        got 404        OK 
+case 08 | Ana (no access) tries to read its task by identifier                           | expected 404        got 404        OK 
+case 08 | Ana (no access) tries to edit its task                                         | expected 404        got 404        OK 
+case 08 | Ana (no access) tries to delete its task                                       | expected 404        got 404        OK 
+case 08 | Ana (no access) tries to read its comments                                     | expected 404        got 404        OK 
+case 08 | Ana (no access) tries to comment on its task                                   | expected 404        got 404        OK 
+case 08 | Ana (no access) tries to assign on its task                                    | expected 404        got 404        OK 
+case 08 | Ana (no access) tries to edit its task with an INVALID body (must still be 404) | expected 404        got 404        OK 
+case 08 | Sofia's private data is unchanged                                              | expected ('Team handbook', 'Private handbook task') got ('Team handbook', 'Private handbook task') OK 
+case 08 | a project that does not exist looks the same (404)                             | expected 404        got 404        OK 
+case 08 | a Member cannot remove the Owner                                               | expected 403        got 403        OK 
+case 08 | even the Owner cannot be removed                                               | expected 409        got 409        OK 
+phase 1 done; failures so far: 0
+case 03 | after the backend restart all 3 tasks are still there                          | expected 3          got 3          OK 
+case 03 | the project is still there after the restart                                   | expected 12         got 12         OK 
+case 03 | comments are still there after the restart                                     | expected 1          got 1          OK 
+case 09 | the project has 3 tasks before deletion                                        | expected 3          got 3          OK 
+case 09 | that task has an assignment and a comment before deletion                      | expected ('1', '1') got ('1', '1') OK 
+case 09 | delete that task                                                               | expected 204        got 204        OK 
+case 09 | its assignments and comments went with it, the other tasks stay                | expected ('0', '0', 2) got ('0', '0', 2) OK 
+case 09 | (cleanup) Sofia deletes her temporary task                                     | expected 204        got 204        OK 
+case 09 | the Owner deletes the project                                                  | expected 204        got 204        OK 
+case 09 | no tasks, memberships, assignments or comments of it remain                    | expected 0|0        got 0|0        OK 
+case 09 | the deleted project answers 404, never a success                               | expected 404        got 404        OK 
+case 09 | deleting it again answers 404                                                  | expected 404        got 404        OK 
+case 09 | a malformed body is refused with 400                                           | expected 400        got 400        OK 
+case 09 | the error body has no internals (no stack trace, class or SQL)                 | expected True       got True       OK 
+case 09 | an unknown route gives the fixed message                                       | expected Resource not found. got Resource not found. OK 
+case 09 | database counts are back to the original                                       | expected 3|3|6|18|4|3 got 3|3|6|18|4|3 OK 
+phase 2 done; failures in total: 0
