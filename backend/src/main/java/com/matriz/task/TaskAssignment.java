@@ -8,8 +8,8 @@ import java.time.Instant;
 
 /**
  * A user assigned to a task (table {@code task_assignments}). The database guarantees that the
- * user is a member of the task's project (docs/database.md, section 3). In this increment
- * assignments are only read; the operations that create and remove them come in increment 5.
+ * user is a member of the task's project (docs/database.md, section 3). The rules for creating
+ * and removing assignments are in {@link AssigneeService}.
  */
 @Entity
 @Table(name = "task_assignments")
@@ -26,6 +26,12 @@ public class TaskAssignment {
 
     protected TaskAssignment() {
         // required by JPA
+    }
+
+    public TaskAssignment(long taskId, long userId, long projectId) {
+        this.id = new TaskAssignmentKey(taskId, userId);
+        this.projectId = projectId;
+        this.assignedAt = Instant.now();
     }
 
     public TaskAssignmentKey getId() {

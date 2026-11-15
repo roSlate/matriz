@@ -1,6 +1,7 @@
 package com.matriz.project;
 
 import com.matriz.common.ApiException;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,16 @@ public class ProjectAccess {
         return members.findById(new ProjectMemberKey(projectId, userId))
                 .map(ProjectMember::getRole)
                 .orElseThrow(ApiException::notFound);
+    }
+
+    /**
+     * The user's role in the project, or empty if they are not a member. Unlike
+     * {@link #requireMembership} it does not refuse: it lets a module check whether <em>another</em>
+     * user may be given something, for example to be assigned to a task.
+     */
+    @Transactional(readOnly = true)
+    public Optional<Role> roleOf(long userId, long projectId) {
+        return members.findById(new ProjectMemberKey(projectId, userId)).map(ProjectMember::getRole);
     }
 
     /** Refuses with {@code 403} when the role is lower than the operation needs. */

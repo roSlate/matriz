@@ -56,3 +56,13 @@ export function updateTask(id: number, input: Partial<TaskInput>): Promise<Task>
 export function deleteTask(id: number): Promise<void> {
   return apiRequest<void>(`/tasks/${id}`, { method: "DELETE" });
 }
+
+/** Assigns a user (an Owner or Member of the project); the answer is the task with its assignees. */
+export function assignUser(taskId: number, userId: number): Promise<Task> {
+  return apiRequest<Task>(`/tasks/${taskId}/assignees`, { method: "POST", body: { userId } });
+}
+
+/** Removes one assignment; the task and its other assignees stay. */
+export function unassignUser(taskId: number, userId: number): Promise<void> {
+  return apiRequest<void>(`/tasks/${taskId}/assignees/${userId}`, { method: "DELETE" });
+}

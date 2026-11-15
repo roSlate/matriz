@@ -1232,7 +1232,8 @@ components:
           description: |
             Machine-readable reason when the status alone is ambiguous, for example
             `CSRF_TOKEN_INVALID` or `ROLE_INSUFFICIENT` (both `403`). The member operations add
-            `USER_NOT_FOUND` (`422`), `ALREADY_MEMBER` and `OWNER_PROTECTED` (both `409`).
+            `USER_NOT_FOUND` (`422`), `ALREADY_MEMBER` and `OWNER_PROTECTED` (both `409`); the assignee
+            operations add `USER_NOT_ASSIGNABLE` (`422`) and `ALREADY_ASSIGNED` (`409`).
         errors:
           type: array
           description: Present on validation errors (`400`).

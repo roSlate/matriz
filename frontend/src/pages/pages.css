@@ -277,3 +277,26 @@
 .search {
   max-width: 420px;
 }
+
+/* Assignee chips with an unassign button */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.chip__remove {
+  padding: 0 var(--space-1);
+  font: inherit;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+}
+
+.chip__remove:hover:not(:disabled),
+.chip__remove:focus-visible {
+  color: var(--color-text);
+}

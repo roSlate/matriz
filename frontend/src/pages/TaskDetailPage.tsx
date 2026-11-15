@@ -17,6 +17,7 @@ import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { SelectField } from "../components/ui/SelectField";
+import { AssigneesPanel } from "../features/tasks/AssigneesPanel";
 import { TaskFormDialog } from "../features/tasks/TaskFormDialog";
 import { PRIORITY_LABELS, PRIORITY_OPTIONS, STATUS_LABELS, STATUS_OPTIONS } from "../features/tasks/taskLabels";
 import "./pages.css";
@@ -174,18 +175,11 @@ export default function TaskDetailPage() {
           </p>
         )}
 
-        <h2 className="section-title">Assignees</h2>
-        {task.assignees.length === 0 ? (
-          <p className="muted">Unassigned</p>
-        ) : (
-          <ul className="chips" aria-label="Assignees">
-            {task.assignees.map((person) => (
-              <li key={person.id}>
-                <Badge>{person.name}</Badge>
-              </li>
-            ))}
-          </ul>
-        )}
+        <AssigneesPanel
+          task={task}
+          canWrite={canWrite}
+          onChanged={(assignees) => setState({ status: "ready", task: { ...task, assignees }, project })}
+        />
       </Card>
 
       {editing && (
