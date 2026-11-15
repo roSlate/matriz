@@ -16,26 +16,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 
 // MockMvc does not show the Set-Cookie headers that Spring Security writes, so the cookie
 // rules are checked against the real embedded server, over real HTTP.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
-class CookieAndCsrfFlowTest {
+class CookieAndCsrfFlowTest extends IntegrationTestBase {
 
     private static final String EMAIL = "ana@example.org";
     private static final String PASSWORD = "correct-password-1";
     private static final String LOGIN_BODY = "{\"email\":\"" + EMAIL + "\",\"password\":\"" + PASSWORD + "\"}";
-
-    @Container
-    @ServiceConnection
-    static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:17");
 
     @LocalServerPort
     int port;

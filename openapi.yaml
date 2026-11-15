@@ -999,6 +999,9 @@ components:
 
     ProjectUpdate:
       type: object
+      description: |
+        A field that is missing or null is left unchanged. To clear the description, send an
+        empty string (it is then stored as null).
       minProperties: 1
       additionalProperties: false
       properties:

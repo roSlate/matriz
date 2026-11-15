@@ -66,7 +66,7 @@ matriz/
 |---|---|---|---|---|---|
 | 0 | Skeleton, database, demo data | none (setup) | none | Must | Done |
 | 1 | Authentication | US-01 | 0 | Must | Done |
-| 2 | Projects: create, list, view, edit | US-02 | 1 | Must | Planned |
+| 2 | Projects: create, list, view, edit | US-02 | 1 | Must | Done |
 | 3 | Members and roles | US-03 | 2 | Must | Planned |
 | 4 | Tasks | US-04, US-05, part of US-09 | 3 | Must | Planned |
 | 5 | Assignees | US-07 | 4 | Should | Planned |
@@ -104,6 +104,7 @@ For every increment the working method is the one from the course: ask the AI fo
 - **Acceptance:** AC-02.1 to AC-02.5; AC-06.1 (only accessible projects); CC-05 for the project routes.
 - **Checks:** the owner is the creator and cannot be supplied by the client; Ana does not see "Team handbook"; a non-member gets `404`, also for an invalid body; a Member or Viewer cannot edit; limits and whitespace-only names are rejected.
 - **Done when (the milestone):** log in, create a project, see it in the list, reload the page, restart the backend and see it still there.
+- **Result (done):** Backend `mvn test`: 40 tests pass (the 22 from before, now sharing one PostgreSQL container, plus 12 project API tests and 6 progress-rounding unit tests). The project API tests cover: the creator becomes Owner and the owner cannot be supplied; trimmed text and every boundary of the limits; a user sees only their own projects, newest first, with their role; pagination and its limits; a non-member gets `404` for everything, including a malformed or invalid body; malformed identifiers give `400`; Member and Viewer get `403 ROLE_INSUFFICIENT` on edit; a Viewer's invalid body gets `400` (input is checked before the role); partial edits and clearing the description; unknown fields refused. A **mutation check** confirmed the tests guard the access step: with the interceptor disabled, 4 tests failed; it was then restored. Frontend: 25 tests pass and the type check is clean (project list with role, counts, progress and the manual label; links; empty, error and retry states; paging; the create form with client-side and server-side errors, kept input, cancel, one new card and no duplicate; the project page with Edit for the Owner only, editing from the server's confirmed answer, and the not-found message). Verified for real with the seeded users through the Vite proxy: each user's list, `404` for a private project even with a malformed body, `403` for Member and Viewer edits, the Owner's rename, and the milestone (create, restart the backend, log in again, project still there). Known and intentional: until the task module exists (increment 4), task counts are zero because a stand-in implements the `TaskCounts` port, so the demo cards show 0 tasks although the database holds 18; the manual progress of "Client onboarding" (80 %) already shows. The dialog does not trap keyboard focus yet.
 
 ### Increment 3: Members and roles (US-03)
 

@@ -3,6 +3,7 @@ import RequireAuth from "./auth/RequireAuth";
 import AppLayout from "./pages/AppLayout";
 import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
+import ProjectDetailPage from "./pages/ProjectDetailPage";
 
 export default function App() {
   return (
@@ -11,6 +12,7 @@ export default function App() {
       <Route element={<RequireAuth />}>
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
+          <Route path="projects/:projectId" element={<ProjectDetailPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

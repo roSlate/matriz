@@ -54,9 +54,9 @@ Java with Spring Boot (backend), React with TypeScript (frontend), PostgreSQL (d
 
 ## Current status
 
-**Stage: implementation, increments 0 and 1 of 9 done.** The Specification Pack and the Architecture Pack are written and have each been through an independent review. Working now: the project skeleton, the database with demo data, and **authentication**: log in, log out and the current user, with a server-side session, CSRF protection and a login page. The dashboard after login is still a placeholder. Progress is tracked in [docs/implementation-plan.md](docs/implementation-plan.md).
+**Stage: implementation, increments 0 to 2 of 9 done.** The Specification Pack and the Architecture Pack are written and have each been through an independent review. Working now: the skeleton and demo data; **authentication** (session, CSRF, login page); and **projects**: a dashboard with the projects you can access (role, task counts, progress), creating a project, a project page, and editing for the Owner, with access rules enforced on the server. Tasks, members, comments and the rest are not built yet, so task counts show zero for now. Progress is tracked in [docs/implementation-plan.md](docs/implementation-plan.md).
 
-Next: projects (increment 2), then members, tasks, and the rest.
+Next: members and roles (increment 3), then tasks, and the rest.
 
 ## Running the project (development)
 

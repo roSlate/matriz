@@ -75,7 +75,8 @@
   font-weight: 600;
 }
 
-.field input {
+.field input,
+.field textarea {
   font: inherit;
   padding: 10px 14px;
   color: var(--color-text);
@@ -84,7 +85,17 @@
   border-radius: var(--radius-md);
 }
 
-.field input[aria-invalid="true"] {
+.field textarea {
+  resize: vertical;
+}
+
+.field textarea:focus-visible {
+  outline: 3px solid rgba(29, 111, 159, 0.45);
+  outline-offset: 2px;
+}
+
+.field input[aria-invalid="true"],
+.field textarea[aria-invalid="true"] {
   border-color: var(--color-danger);
   border-width: 2px;
 }
@@ -112,4 +123,71 @@
   background: var(--color-danger-soft);
   border-color: var(--color-danger-border);
   color: #7a2417;
+}
+
+.alert__text {
+  margin: 0 0 var(--space-2);
+}
+
+/* Badge: a small rounded label, for example a role. */
+.badge {
+  display: inline-block;
+  padding: 2px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+  background: var(--color-accent-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+}
+
+/* Progress bar: a pale track with a glassy fill. */
+.progress {
+  height: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+}
+
+.progress__fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(180deg, var(--color-accent-top) 0%, var(--color-accent-deep) 100%);
+  border-radius: 999px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+/* Dialog */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: var(--space-3);
+  background: rgba(27, 37, 54, 0.4);
+  backdrop-filter: blur(3px);
+}
+
+.dialog {
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: var(--space-4);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+}
+
+.dialog h2 {
+  margin-top: 0;
+}
+
+.dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
 }
