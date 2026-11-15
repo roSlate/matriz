@@ -106,6 +106,37 @@ public class ProjectService {
         projects.delete(load(projectId));
     }
 
+    /**
+     * Sets the manual progress (FR-25, AC-10.1, AC-10.2, AC-10.4). Only the Owner may. The value must be
+     * a whole number from 0 to 100; the input is checked before the role (404, 400, 403). The computed
+     * value keeps following the tasks and is shown alongside.
+     */
+    @Transactional
+    public ProjectResponse setProgressOverride(long projectId, Role role, ProgressOverrideRequest request) {
+        FieldValidation validation = FieldValidation.create();
+        if (request.percentage() == null) {
+            validation.addError("percentage", "Must be a whole number from 0 to 100.");
+        } else {
+            validation.range("percentage", request.percentage(), 0, 100);
+        }
+        validation.throwIfInvalid();
+        ProjectAccess.requireAtLeast(role, Role.OWNER);
+
+        Project project = load(projectId);
+        project.setProgressOverride(request.percentage());
+        return response(project, role);
+    }
+
+    /** Clears the manual progress, so progress is computed from the tasks again (AC-10.3). Only the Owner may. */
+    @Transactional
+    public ProjectResponse clearProgressOverride(long projectId, Role role) {
+        ProjectAccess.requireAtLeast(role, Role.OWNER);
+
+        Project project = load(projectId);
+        project.setProgressOverride(null);
+        return response(project, role);
+    }
+
     private Project load(long projectId) {
         return projects.findById(projectId).orElseThrow(ApiException::notFound);
     }

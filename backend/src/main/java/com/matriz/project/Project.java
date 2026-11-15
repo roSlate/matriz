@@ -78,6 +78,15 @@ public class Project {
         return progressOverride == null ? null : progressOverride.intValue();
     }
 
+    /**
+     * Sets the Owner's manual progress (0 to 100, already checked by the caller), or clears it with
+     * null so that progress goes back to the value computed from the tasks. Zero is a value, not "none".
+     */
+    public void setProgressOverride(Integer percentage) {
+        this.progressOverride = percentage == null ? null : percentage.shortValue();
+        this.updatedAt = Instant.now();
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }

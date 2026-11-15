@@ -59,6 +59,15 @@ class StrictJsonTypesTest extends ApiTestBase {
     }
 
     @Test
+    void aDecimalIsNotAcceptedWhereTheContractSaysInteger_insteadOfBeingCutShort() throws Exception {
+        send(ana, post("/api/v1/tasks/" + taskId + "/assignees"), "{\"userId\":" + rui.getId() + ".5}")
+                .andExpect(status().isBadRequest());
+        send(ana, post("/api/v1/tasks/" + taskId + "/assignees"), "{\"userId\":" + rui.getId() + ".0}")
+                .andExpect(status().isBadRequest());
+        assertThat(count("task_assignments")).isZero();
+    }
+
+    @Test
     void aCorrectlyTypedRequestStillWorks() throws Exception {
         send(ana, post("/api/v1/projects"), "{\"name\":\"A valid name\"}").andExpect(status().isCreated());
         send(ana, post("/api/v1/tasks/" + taskId + "/assignees"), "{\"userId\":" + rui.getId() + "}")

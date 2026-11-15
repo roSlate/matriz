@@ -49,3 +49,13 @@ export function updateProject(id: number, input: Partial<ProjectInput>): Promise
 export function deleteProject(id: number): Promise<void> {
   return apiRequest<void>(`/projects/${id}`, { method: "DELETE" });
 }
+
+/** Sets the manual progress (a whole number from 0 to 100). Only the Owner may. */
+export function setProgressOverride(id: number, percentage: number): Promise<Project> {
+  return apiRequest<Project>(`/projects/${id}/progress-override`, { method: "PUT", body: { percentage } });
+}
+
+/** Clears the manual progress, so progress is computed from the tasks again. Only the Owner may. */
+export function clearProgressOverride(id: number): Promise<Project> {
+  return apiRequest<Project>(`/projects/${id}/progress-override`, { method: "DELETE" });
+}

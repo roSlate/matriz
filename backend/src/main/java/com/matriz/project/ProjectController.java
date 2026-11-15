@@ -8,6 +8,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
@@ -60,6 +61,21 @@ public class ProjectController {
                                   @RequestAttribute(AccessStepInterceptor.ROLE_ATTRIBUTE) Role role,
                                   @RequestBody ProjectUpdateRequest body) {
         return projects.update(projectId, role, body);
+    }
+
+    /** Sets the manual progress percentage. Owner only. */
+    @PutMapping("/{projectId}/progress-override")
+    public ProjectResponse setProgressOverride(@PathVariable long projectId,
+                                               @RequestAttribute(AccessStepInterceptor.ROLE_ATTRIBUTE) Role role,
+                                               @RequestBody ProgressOverrideRequest body) {
+        return projects.setProgressOverride(projectId, role, body);
+    }
+
+    /** Clears the manual progress, returning to the computed value. Owner only. */
+    @DeleteMapping("/{projectId}/progress-override")
+    public ProjectResponse clearProgressOverride(@PathVariable long projectId,
+                                                 @RequestAttribute(AccessStepInterceptor.ROLE_ATTRIBUTE) Role role) {
+        return projects.clearProgressOverride(projectId, role);
     }
 
     /** Permanently deletes the project and everything inside it. Owner only. */

@@ -1,13 +1,22 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ApiError } from "../api/client";
-import { deleteProject, getProject, updateProject, type Project, type ProjectInput } from "../api/projects";
+import {
+  clearProgressOverride,
+  deleteProject,
+  getProject,
+  setProgressOverride,
+  updateProject,
+  type Project,
+  type ProjectInput,
+} from "../api/projects";
 import { Alert } from "../components/ui/Alert";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { ProjectFormDialog } from "../features/projects/ProjectFormDialog";
+import { ProgressOverrideDialog } from "../features/projects/ProgressOverrideDialog";
 import { ProjectProgress } from "../features/projects/ProjectProgress";
 import { ROLE_LABELS } from "../features/projects/projectLabels";
 import { MembersSection } from "../features/members/MembersSection";
@@ -27,6 +36,9 @@ export default function ProjectDetailPage() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [settingProgress, setSettingProgress] = useState(false);
+  const [clearingProgress, setClearingProgress] = useState(false);
+  const [progressError, setProgressError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -59,6 +71,29 @@ export default function ProjectDetailPage() {
     const updated = await updateProject(Number(projectId), input);
     setState({ status: "ready", project: updated });
     setEditing(false);
+  }
+
+  async function handleSetProgress(percentage: number) {
+    // The screen shows what the server confirmed, not what was typed.
+    const updated = await setProgressOverride(Number(projectId), percentage);
+    setState({ status: "ready", project: updated });
+    setSettingProgress(false);
+  }
+
+  async function handleClearProgress() {
+    if (clearingProgress) {
+      return;
+    }
+    setClearingProgress(true);
+    setProgressError(null);
+    try {
+      const updated = await clearProgressOverride(Number(projectId));
+      setState({ status: "ready", project: updated });
+    } catch (error) {
+      setProgressError(error instanceof ApiError ? error.message : "Could not clear the manual progress. Please try again.");
+    } finally {
+      setClearingProgress(false);
+    }
   }
 
   async function handleDelete() {
@@ -118,6 +153,21 @@ export default function ProjectDetailPage() {
 
       <Card>
         <ProjectProgress project={project} />
+        {project.myRole === "OWNER" && (
+          <div className="progress-controls">
+            {progressError && <Alert tone="error">{progressError}</Alert>}
+            <div className="page-heading__actions">
+              <Button variant="secondary" onClick={() => setSettingProgress(true)}>
+                {project.progress.manual === null ? "Set manual progress" : "Change manual progress"}
+              </Button>
+              {project.progress.manual !== null && (
+                <Button variant="secondary" disabled={clearingProgress} onClick={() => void handleClearProgress()}>
+                  Use computed value
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
       </Card>
 
       <TasksSection project={project} onChanged={refreshProject} />
@@ -136,6 +186,14 @@ export default function ProjectDetailPage() {
           confirmLabel="Delete project"
           onConfirm={handleDelete}
           onCancel={() => setDeleting(false)}
+        />
+      )}
+
+      {settingProgress && (
+        <ProgressOverrideDialog
+          initial={project.progress.effective}
+          onSubmit={handleSetProgress}
+          onClose={() => setSettingProgress(false)}
         />
       )}
 
