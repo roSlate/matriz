@@ -2,6 +2,7 @@ import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 import type { Page, Project } from "./api/projects";
+import type { Task } from "./api/tasks";
 import App from "./App";
 import { AuthProvider, type User } from "./auth/AuthContext";
 
@@ -71,4 +72,23 @@ export function project(overrides: Partial<Project> = {}): Project {
 
 export function pageOf(items: Project[], overrides: Partial<Page<Project>> = {}): Page<Project> {
   return { items, page: 0, size: 12, totalItems: items.length, totalPages: items.length === 0 ? 0 : 1, ...overrides };
+}
+
+export function task(overrides: Partial<Task> = {}): Task {
+  return {
+    id: 5,
+    projectId: 1,
+    title: "Write the project brief",
+    description: "One page, for the client.",
+    status: "TODO",
+    priority: "MEDIUM",
+    assignees: [],
+    createdAt: "2026-11-14T10:00:00Z",
+    updatedAt: "2026-11-15T09:00:00Z",
+    ...overrides,
+  };
+}
+
+export function taskPageOf(items: Task[], overrides: Partial<Page<Task>> = {}): Page<Task> {
+  return { items, page: 0, size: 10, totalItems: items.length, totalPages: items.length === 0 ? 0 : 1, ...overrides };
 }

@@ -185,3 +185,88 @@
   font-size: 0.85rem;
   color: var(--color-text-muted);
 }
+
+/* Tasks on the project page */
+.tasks {
+  margin-top: var(--space-5);
+}
+
+.tasks h2,
+.section-title {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.section-title {
+  margin: var(--space-3) 0 var(--space-2);
+  font-size: 1.1rem;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.empty {
+  padding: var(--space-4);
+  text-align: center;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.task-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.task-table th,
+.task-table td {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.task-table th {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.task-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.task-table a {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.page-heading__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 640px) {
+  .task-table th:nth-child(4),
+  .task-table td:nth-child(4) {
+    display: none;
+  }
+}

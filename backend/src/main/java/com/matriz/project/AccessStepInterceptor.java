@@ -1,6 +1,6 @@
 package com.matriz.project;
 
-import com.matriz.common.ApiException;
+import com.matriz.common.Identifiers;
 import com.matriz.identity.UserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -41,19 +41,7 @@ public class AccessStepInterceptor implements HandlerInterceptor {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserPrincipal user = (UserPrincipal) authentication.getPrincipal();
-        request.setAttribute(ROLE_ATTRIBUTE, access.requireMembership(user.id(), parseId(rawId)));
+        request.setAttribute(ROLE_ATTRIBUTE, access.requireMembership(user.id(), Identifiers.parse(rawId)));
         return true;
-    }
-
-    private static long parseId(String raw) {
-        try {
-            long id = Long.parseLong(raw);
-            if (id >= 1) {
-                return id;
-            }
-        } catch (NumberFormatException ignored) {
-            // falls through to the error below
-        }
-        throw ApiException.badRequest("Identifiers must be positive whole numbers.");
     }
 }

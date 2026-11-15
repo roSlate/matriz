@@ -68,12 +68,14 @@ matriz/
 | 1 | Authentication | US-01 | 0 | Must | Done |
 | 2 | Projects: create, list, view, edit | US-02 | 1 | Must | Done |
 | 3 | Members and roles | US-03 | 2 | Must | Planned |
-| 4 | Tasks | US-04, US-05, part of US-09 | 3 | Must | Planned |
+| 4 | Tasks | US-04, US-05, part of US-09 | 3 | Must | Done |
 | 5 | Assignees | US-07 | 4 | Should | Planned |
 | 6 | Dashboard, search, project deletion | US-06, rest of US-09, US-11 | 4 | Must | Planned |
 | 7 | Comments | US-08 | 4 | Should | Planned |
 | 8 | Manual progress override | US-10 | 6 | Should | Planned |
 | 9 | Verification, review and delivery | all | all done | Must | Planned |
+
+**Order actually followed:** 0, 1, 2, then 4, 6, 3, 5, 7, 8, 9. Increment 4 (tasks) was built before 3 (members) because the demo data already gives every project members with all three roles, so tasks do not need member management to work, and the deadline made the core of the product the priority. The numbers are kept for reference; the "Depends on" column shows the logical dependency of the final system, not the build order.
 
 Milestone, as the ficha names it: **after increment 2**, a user can log in, create a project, see it in the list, and still see it after reloading the page and restarting the backend.
 
@@ -121,6 +123,7 @@ For every increment the working method is the one from the course: ask the AI fo
 - **Acceptance:** AC-04.1 to AC-04.7; AC-05.1 to AC-05.5; AC-09.2 to AC-09.4; FR-26; EC-01 (task titles).
 - **Checks:** a new task appears without a reload, once, and survives a reload and a restart; invalid and whitespace-only titles are rejected; a Viewer cannot write; a task of another project is not reachable by changing the identifier; filters combine.
 - **Done when:** a project's tasks can be fully managed through the interface.
+- **Result (done):** Backend `mvn test`: 56 tests pass (40 before, plus 16 task API tests). They cover: a created task is stored and read back from the database (the ficha's required persistence test); defaults and chosen status and priority; every boundary of the title and description limits after trimming; unknown fields and invalid enum values refused; a Viewer can read but gets `403` on create, edit and delete, and `400` for an invalid body (input before role); a Member can create, edit and delete; a non-member gets `404` for everything, by project and by task identifier, including with an invalid or malformed body and for a task that does not exist; malformed identifiers give `400`; filters by status and priority combine and "no match" is an empty page; newest-first order and paging with limits; assignees shown with names and an empty list for an unassigned task; partial edits, reopening a done task, clearing the description, invalid edits changing nothing; deleting a task removes its assignments and comments and leaves other tasks; the project counts and progress follow the tasks and appear on the dashboard list. A **mutation check** on the new task access step made 8 tests fail; it was restored afterwards. Frontend: 50 tests pass and the type check is clean (the task list with status, priority, assignees and links; filters, combining and clearing; "no match" is not an error; empty states for Owner, Member and Viewer; error with retry; paging; the create form with client-side and server-side errors, kept input, one new row, and a refresh of the project's counts; the task page with status and priority changes from the server's confirmed answer, reopening, failure leaving the old value, a read-only view for a Viewer, editing, delete with cancel, success and failure, and the not-found message). Verified for real with the seeded users: the dashboard now shows true counts (Website redesign 4/2/6, Client onboarding 3/1/2); the task list with assignees and filters; a Member's create, edit, reopen and delete; a Viewer's `403` on every write; and the cross-project attack, where a user cannot read, edit (even with an invalid body) or delete another project's task by its identifier. The test data created for the check was removed afterwards. Not in this increment: assigning and unassigning people (increment 5; assignees are read-only here), and comments (increment 7).
 
 ### Increment 5: Assignees (US-07)
 

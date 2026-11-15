@@ -9,6 +9,7 @@ import { Card } from "../components/ui/Card";
 import { ProjectFormDialog } from "../features/projects/ProjectFormDialog";
 import { ProjectProgress } from "../features/projects/ProjectProgress";
 import { ROLE_LABELS } from "../features/projects/projectLabels";
+import { TasksSection } from "../features/tasks/TasksSection";
 import "./pages.css";
 
 type LoadState =
@@ -41,6 +42,13 @@ export default function ProjectDetailPage() {
       cancelled = true;
     };
   }, [projectId, reloadKey]);
+
+  // Quietly reloads the project, so the counts and progress follow the tasks without a flash.
+  function refreshProject() {
+    getProject(Number(projectId))
+      .then((project) => setState({ status: "ready", project }))
+      .catch(() => undefined);
+  }
 
   async function handleEdit(input: ProjectInput) {
     // The screen shows what the server confirmed, not what was typed.
@@ -97,6 +105,8 @@ export default function ProjectDetailPage() {
       <Card>
         <ProjectProgress project={project} />
       </Card>
+
+      <TasksSection project={project} onChanged={refreshProject} />
 
       {editing && (
         <ProjectFormDialog
