@@ -77,7 +77,7 @@ Record of the independent reviews of the Specification Pack (Ficha 01, Exercise 
 | 23 | Low | Email and name limits, and the storage of empty descriptions, are not aligned. | **Accepted** | Email up to 254, name up to 100; empty descriptions stored as null. |
 | 24 | Low | The member list is not paginated, against the "collections are paginated" rule. | **Accepted** | Recorded as an explicit exception. |
 
-**What the reviewer could not check.** It did not render the Mermaid diagrams in `architecture.md` (only the ER diagram in `database.md` was rendered, by the author), and it did not run an OpenAPI linter. The author checked the contract with a script (YAML syntax, all references resolve, unique operation IDs, CSRF on every data-changing operation, a 401 on every protected one); this is not a full OpenAPI validator.
+**What the reviewer could not check.** It did not render the Mermaid diagrams in `architecture.md`, and it did not run an OpenAPI linter. The author rendered all three Mermaid diagrams (the ER diagram in `database.md` and the two in `architecture.md`, after the fixes of this review) in the Mermaid Live Editor, version 12.3.0: all render without errors. The author checked the contract with a script (YAML syntax, all references resolve, unique operation IDs, CSRF on every data-changing operation, a 401 on every protected one); this is not a full OpenAPI validator.
 
 **Observations**
 
