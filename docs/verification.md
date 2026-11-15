@@ -76,6 +76,7 @@ For each: how it was found, the cause, the limited fix and the regression test.
 | 6 | Unknown routes answered "No static resource…" and a bad query value "Failed to convert…" (found in the review, step 2 of increment 9). | Probing the real API for errors that no controller produces. | The framework's own messages. No stack trace, SQL or path was exposed, but CC-02 asks for fixed texts. | `ApiExceptionHandler` now answers `Resource not found.` and `A query parameter has an invalid value.`; `ErrorResponsesTest` (two of its three tests failed before). |
 | 7 | A test about an expired session failed once in a full run (`App.test.tsx`). | One full run of the frontend suite under load. | By reading the code (not reproduced): the "was signed in" flag was set in an effect after the render, so a 401 arriving in that window was not reported as an expired session. | The flag is set when the user is stored (`AuthContext`). The failure never recurred in 10 later runs, but it was not reproduced before either, so this is a reasoned fix, not a proven one. A deterministic regression test is not practical for a window of a few milliseconds. |
 | 8 | The first run of the scripted check reported 12 failures where the expected and the observed values were identical. | The output itself. | A bug in the script: a list or tuple was compared with "is in" instead of equality. | Comparator fixed, the data of the flawed run removed, and the whole check rerun from the start (99 checks, 0 failures). |
+| 9 | A probe written for the contract comparison renamed a demo project ("Client onboarding" became "zzzz"). | The probe expected `403` for a Member and got `200`. | A mistake in the probe, not in the application: it took the first project of Ana's list, which was a project where Rui is the Owner, so the edit was legitimate. | The name was restored at once (the description, the manual progress and all row counts were untouched; only that project's `updated_at` differs from the seed). No regression test applies, because the application behaved correctly; from then on probes only use throwaway data. |
 
 ## 4. Review of the diff, and the refactoring
 
@@ -165,16 +166,36 @@ Done by the developer on 2026-11-15 at http://localhost:5173 with the demo accou
 - **Dependency vulnerabilities:** no audit was run (it needs network access).
 - **Concurrency and load:** two simultaneous users on the same data, and any performance measure, were not tested.
 - **End-to-end tests and CI:** the automated end-to-end test belongs to Ficha 04, and continuous integration to Ficha 05.
-- **Clean copy:** the check that the README steps start the application from a fresh clone is recorded in section 8.
 
 ## 8. Completion criteria of the ficha
 
 | Criterion | Status | Evidence |
 |---|---|---|
-| The application starts following the README | To be confirmed from a clean copy | Pending (step 8 of increment 9). |
+| The application starts following the README | Met | The clean-copy check below. |
 | The MVP manages projects, tasks, assignees and comments through the interface | Met | Component tests (A), the scripted API run (S) and the 16 manual items (M), sections 2 and 5. |
 | Authentication and authorization also work for direct API requests | Met | Case 01 and case 08 (A and S). |
 | Data persists after reloading the interface and restarting the backend | Met | Case 03: the real backend restart (S) and the reloads in manual items 4, 6 and 10 (M). |
 | The interface handles loading, no data, success and error | Met | Every screen has tests for these states (A); manual items 3, 14 and 15 (M). |
 | The contract matches the implementation and the checks have recorded results | Met | Section 4 (contract comparison) and this document. |
-| The code was reviewed and the delivered version is identified in Git | Review done; tag pending | Section 4; tag `ficha-03-delivery` at the end of increment 9. |
+| The code was reviewed and the delivered version is identified in Git | Met | Section 4; the annotated tag `ficha-03-delivery` is on the commit that contains this text. |
+
+### Clean-copy check (Exercise 9.6)
+
+A fresh `git clone` of the committed state (commit `89134ce`, with no `.env`, no `node_modules` and no build output) was made in a scratch folder and the README was followed step by step. The scratch copy was deleted afterwards, together with its database and volume.
+
+| Step (as in the README) | Result |
+|---|---|
+| `cp .env.example .env` and a local password | Done. |
+| `docker compose up -d db` | The container became healthy. |
+| `mvn -DskipTests package` | The jar was built. |
+| Start the backend with `SPRING_PROFILES_ACTIVE=dev` | Flyway migrated the empty schema to version 1000 ("create schema" and "demo data"), the application started, and the health check answered `UP`. The database held the demo data: 3 users, 3 projects, 6 memberships, 18 tasks, 4 assignments, 3 comments. |
+| The curl example of the README (login, then `/users/me`) | Logged in as Ana Silva and read the profile. |
+| `mvn verify` | 134 tests, 0 failures; build success in 36 s. |
+| `npm install`, `npm run typecheck`, `npm test`, `npm run build` | The 101 packages were installed; type check clean; 122 tests passed; the build succeeded. |
+| `npm run dev` | The development server served the application (HTTP 200, title "Matriz"). |
+
+**Differences from the README, and what they leave unproven.**
+- The database, the backend and the development server ran on other ports (5433, 8082, 5174, through a scratch `compose.override.yaml` that is not part of the repository), so that the check could run next to the developer's own database. The README itself uses the default ports.
+- Maven ran with `-o` and npm with `--offline`, so that no network was used. The dependencies came from the local caches; this check therefore does not prove that a first download from the internet works.
+- The browser interface was not driven against the clean copy, because the development proxy points at port 8080. The clean copy's frontend was installed, type-checked, tested, built and served, and its backend was checked with curl. The interface itself was checked in section 5, on the same code.
+
