@@ -5,6 +5,7 @@ import com.matriz.identity.UserPrincipal;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,13 +31,14 @@ public class ProjectController {
         this.projects = projects;
     }
 
-    /** The projects the caller is a member of, newest first. */
+    /** The projects the caller is a member of, newest first, optionally only those whose name contains {@code search}. */
     @GetMapping
     public PageResponse<ProjectResponse> list(@AuthenticationPrincipal UserPrincipal user,
+                                              @RequestParam(required = false) String search,
                                               @RequestParam(defaultValue = "0") int page,
                                               @RequestParam(defaultValue = "20") int size) {
         Sort newestFirst = Sort.by(Sort.Order.desc("project.createdAt"), Sort.Order.desc("project.id"));
-        return projects.list(user.id(), PageResponse.pageable(page, size, newestFirst));
+        return projects.list(user.id(), search, PageResponse.pageable(page, size, newestFirst));
     }
 
     /** Creates a project; the caller, taken from the session, becomes its Owner. */
@@ -58,5 +60,13 @@ public class ProjectController {
                                   @RequestAttribute(AccessStepInterceptor.ROLE_ATTRIBUTE) Role role,
                                   @RequestBody ProjectUpdateRequest body) {
         return projects.update(projectId, role, body);
+    }
+
+    /** Permanently deletes the project and everything inside it. Owner only. */
+    @DeleteMapping("/{projectId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable long projectId,
+                       @RequestAttribute(AccessStepInterceptor.ROLE_ATTRIBUTE) Role role) {
+        projects.delete(projectId, role);
     }
 }

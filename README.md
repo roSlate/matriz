@@ -54,9 +54,9 @@ Java with Spring Boot (backend), React with TypeScript (frontend), PostgreSQL (d
 
 ## Current status
 
-**Stage: implementation, increments 0, 1, 2 and 4 of 9 done.** The Specification Pack and the Architecture Pack are written and have each been through an independent review. Working now: the skeleton and demo data; **authentication** (session, CSRF, login page); **projects** (a dashboard with role, task counts and progress; creating, viewing and editing); and **tasks** (a task list with status and priority filters and paging, creating, a task page with status and priority changes, editing and deleting), with access rules enforced on the server for every role. Not built yet: managing members, assigning people, comments, searching projects, deleting projects, and the manual progress override. Progress is tracked in [docs/implementation-plan.md](docs/implementation-plan.md).
+**Stage: implementation, increments 0, 1, 2, 4 and 6 of 9 done.** The Specification Pack and the Architecture Pack are written and have each been through an independent review. Working now: the skeleton and demo data; **authentication** (session, CSRF, login page); **projects** (a dashboard with role, task counts and progress; searching by name; creating, viewing, editing, and deleting for the Owner); and **tasks** (a task list with status and priority filters and paging, creating, a task page with status and priority changes, editing and deleting), with access rules enforced on the server for every role. Not built yet: managing members, assigning people, comments, and the manual progress override. Progress is tracked in [docs/implementation-plan.md](docs/implementation-plan.md).
 
-Next: the dashboard search and project deletion (increment 6), then members and roles (increment 3), and the rest.
+Next: members and roles (increment 3), then assignees (5), and comments and the override if time allows.
 
 ## Running the project (development)
 

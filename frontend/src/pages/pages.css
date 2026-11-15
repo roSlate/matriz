@@ -270,3 +270,8 @@
     display: none;
   }
 }
+
+/* Search box on the dashboard */
+.search {
+  max-width: 420px;
+}

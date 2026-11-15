@@ -187,3 +187,76 @@ describe("creating a project", () => {
     expect(requests(api, "POST", "/projects")).toHaveLength(0);
   });
 });
+
+describe("searching projects", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  const searchOf = (path: string) => new URL(path, "http://localhost").searchParams.get("search");
+
+  it("waits for a pause in typing, then shows only the matching projects", async () => {
+    const api = mockApi({
+      ...signedInAsAna,
+      "GET /api/v1/projects": ({ path }) =>
+        json(
+          200,
+          searchOf(path) === "redesign"
+            ? pageOf([project({ id: 1, name: "Website redesign" })])
+            : pageOf([project({ id: 1, name: "Website redesign" }), project({ id: 2, name: "Client onboarding" })]),
+        ),
+    });
+    renderApp("/");
+    const user = userEvent.setup();
+    expect(await screen.findByRole("link", { name: /Client onboarding/ })).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Search projects"), "redesign");
+
+    await vi.waitFor(() => expect(screen.queryByRole("link", { name: /Client onboarding/ })).not.toBeInTheDocument());
+    expect(screen.getByRole("link", { name: /Website redesign/ })).toBeInTheDocument();
+    const searches = requests(api, "GET", "/projects").map(([url]) => searchOf(String(url)));
+    expect(searches.at(-1)).toBe("redesign");
+    // One request after the pause, not one per keystroke.
+    expect(searches.filter((value) => value !== null)).toHaveLength(1);
+  });
+
+  it("says no project matches, which is different from having none, and clears the search", async () => {
+    mockApi({
+      ...signedInAsAna,
+      "GET /api/v1/projects": ({ path }) =>
+        json(200, searchOf(path) ? pageOf([]) : pageOf([project({ id: 1, name: "Website redesign" })])),
+    });
+    renderApp("/");
+    const user = userEvent.setup();
+    await screen.findByRole("link", { name: /Website redesign/ });
+
+    await user.type(screen.getByLabelText("Search projects"), "zzz");
+
+    expect(await screen.findByText("No projects match your search.")).toBeInTheDocument();
+    expect(screen.queryByText("You have no projects yet.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Clear search" }));
+
+    expect(await screen.findByRole("link", { name: /Website redesign/ })).toBeInTheDocument();
+    expect(screen.getByLabelText("Search projects")).toHaveValue("");
+  });
+
+  it("goes back to the first page when the search changes", async () => {
+    const api = mockApi({
+      ...signedInAsAna,
+      "GET /api/v1/projects": ({ path }) =>
+        json(200, pageOf([project()], { totalItems: 13, totalPages: path.includes("search=") ? 1 : 2 })),
+    });
+    renderApp("/");
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Next" }));
+    await screen.findByText("Page 2 of 2");
+
+    await user.type(screen.getByLabelText("Search projects"), "web");
+
+    await vi.waitFor(() => {
+      const last = String(requests(api, "GET", "/projects").at(-1)?.[0]);
+      expect(last).toContain("search=web");
+      expect(last).toContain("page=0");
+    });
+  });
+});

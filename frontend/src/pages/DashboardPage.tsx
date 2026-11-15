@@ -9,29 +9,50 @@ import {
 import { Alert } from "../components/ui/Alert";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { TextField } from "../components/ui/TextField";
 import { ProjectCard } from "../features/projects/ProjectCard";
 import { ProjectFormDialog } from "../features/projects/ProjectFormDialog";
 import "./pages.css";
 
 type LoadState = { status: "loading" } | { status: "error" } | { status: "ready"; data: Page<Project> };
 
+// How long to wait after the last keystroke before asking the server.
+const SEARCH_DELAY_MS = 300;
+
 /** The dashboard: the projects the user can access, as cards with their roles, counts and progress. */
 export default function DashboardPage() {
   const [page, setPage] = useState(0);
   const [reloadKey, setReloadKey] = useState(0);
+  const [searchText, setSearchText] = useState(""); // what is typed in the box
+  const [search, setSearch] = useState(""); // what was last sent to the server
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [creating, setCreating] = useState(false);
+
+  // Wait for a pause in typing, and start again from the first page: the matches are a new list.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchText.trim());
+      setPage(0);
+    }, SEARCH_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [searchText]);
 
   useEffect(() => {
     let cancelled = false;
     setState({ status: "loading" });
-    listProjects(page)
+    listProjects(page, search)
       .then((data) => !cancelled && setState({ status: "ready", data }))
       .catch(() => !cancelled && setState({ status: "error" }));
     return () => {
       cancelled = true;
     };
-  }, [page, reloadKey]);
+  }, [page, search, reloadKey]);
+
+  function clearSearch() {
+    setSearchText("");
+    setSearch("");
+    setPage(0);
+  }
 
   async function handleCreate(input: ProjectInput) {
     await createProject(input);
@@ -47,6 +68,16 @@ export default function DashboardPage() {
         <Button onClick={() => setCreating(true)}>New project</Button>
       </div>
 
+      <div className="search">
+        <TextField
+          label="Search projects"
+          type="search"
+          autoComplete="off"
+          value={searchText}
+          onChange={(event) => setSearchText(event.target.value)}
+        />
+      </div>
+
       {state.status === "loading" && <p role="status">Loading projects…</p>}
 
       {state.status === "error" && (
@@ -58,7 +89,16 @@ export default function DashboardPage() {
         </Alert>
       )}
 
-      {state.status === "ready" && state.data.totalItems === 0 && (
+      {state.status === "ready" && state.data.totalItems === 0 && search !== "" && (
+        <Card>
+          <p>No projects match your search.</p>
+          <Button variant="secondary" onClick={clearSearch}>
+            Clear search
+          </Button>
+        </Card>
+      )}
+
+      {state.status === "ready" && state.data.totalItems === 0 && search === "" && (
         <Card>
           <p>You have no projects yet.</p>
           <Button onClick={() => setCreating(true)}>Create your first project</Button>

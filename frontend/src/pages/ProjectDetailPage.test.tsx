@@ -1,7 +1,7 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { json, mockApi, problem, project, renderApp, requests, signedInAsAna } from "../test-utils";
+import { json, mockApi, pageOf, problem, project, renderApp, requests, signedInAsAna, taskPageOf } from "../test-utils";
 
 describe("project page", () => {
   afterEach(() => vi.restoreAllMocks());
@@ -88,5 +88,79 @@ describe("project page", () => {
       await screen.findByText("This project no longer exists, or you no longer have access to it."),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to my projects" })).toHaveAttribute("href", "/");
+  });
+});
+
+describe("deleting a project", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  const routes = (role: "OWNER" | "MEMBER" | "VIEWER" = "OWNER") => ({
+    ...signedInAsAna,
+    "GET /api/v1/projects/1": () => json(200, project({ myRole: role })),
+    "GET /api/v1/projects/1/tasks": () => json(200, taskPageOf([])),
+    "GET /api/v1/projects": () => json(200, pageOf([])),
+  });
+
+  it("offers Delete project to the Owner only", async () => {
+    mockApi(routes("OWNER"));
+    renderApp("/projects/1");
+    expect(await screen.findByRole("button", { name: "Delete project" })).toBeInTheDocument();
+  });
+
+  it.each(["MEMBER", "VIEWER"] as const)("does not offer Delete project to a %s", async (role) => {
+    mockApi(routes(role));
+    renderApp("/projects/1");
+
+    await screen.findByRole("heading", { level: 1, name: "Website redesign" });
+    expect(screen.queryByRole("button", { name: "Delete project" })).not.toBeInTheDocument();
+  });
+
+  it("says what will be lost, and deletes nothing when the user cancels", async () => {
+    const api = mockApi(routes());
+    renderApp("/projects/1");
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: "Delete project" }));
+    const dialog = screen.getByRole("dialog", { name: 'Delete "Website redesign"?' });
+    expect(dialog).toHaveTextContent("Its 12 tasks");
+    expect(dialog).toHaveTextContent("permanently deleted");
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(requests(api, "DELETE", "/projects/1")).toHaveLength(0);
+    expect(screen.getByRole("heading", { level: 1, name: "Website redesign" })).toBeInTheDocument();
+  });
+
+  it("deletes the project after confirmation and goes back to the dashboard", async () => {
+    const api = mockApi({
+      ...routes(),
+      "DELETE /api/v1/projects/1": () => new Response(null, { status: 204 }),
+    });
+    renderApp("/projects/1");
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: "Delete project" }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete project" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "My projects" })).toBeInTheDocument();
+    expect(await screen.findByText("You have no projects yet.")).toBeInTheDocument();
+    expect(requests(api, "DELETE", "/projects/1")).toHaveLength(1);
+  });
+
+  it("keeps the dialog open and shows the error when deleting fails, never a success", async () => {
+    mockApi({
+      ...routes(),
+      "DELETE /api/v1/projects/1": () => problem(500, "Something went wrong. Please try again."),
+    });
+    renderApp("/projects/1");
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: "Delete project" }));
+    const dialog = screen.getByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Delete project" }));
+
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("Something went wrong. Please try again.");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 1, name: "My projects" })).not.toBeInTheDocument();
   });
 });

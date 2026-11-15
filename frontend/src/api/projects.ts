@@ -24,8 +24,13 @@ export type ProjectInput = { name: string; description: string };
 /** Projects shown per page on the dashboard. */
 export const PROJECTS_PER_PAGE = 12;
 
-export function listProjects(page: number): Promise<Page<Project>> {
-  return apiRequest<Page<Project>>(`/projects?page=${page}&size=${PROJECTS_PER_PAGE}`);
+/** The user's projects, newest first; with {@code search}, only those whose name contains it. */
+export function listProjects(page: number, search = ""): Promise<Page<Project>> {
+  const query = new URLSearchParams({ page: String(page), size: String(PROJECTS_PER_PAGE) });
+  if (search.trim() !== "") {
+    query.set("search", search.trim());
+  }
+  return apiRequest<Page<Project>>(`/projects?${query}`);
 }
 
 export function getProject(id: number): Promise<Project> {
@@ -38,4 +43,9 @@ export function createProject(input: ProjectInput): Promise<Project> {
 
 export function updateProject(id: number, input: Partial<ProjectInput>): Promise<Project> {
   return apiRequest<Project>(`/projects/${id}`, { method: "PATCH", body: input });
+}
+
+/** Permanently deletes the project and everything inside it. Only the Owner may. */
+export function deleteProject(id: number): Promise<void> {
+  return apiRequest<void>(`/projects/${id}`, { method: "DELETE" });
 }

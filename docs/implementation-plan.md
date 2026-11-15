@@ -70,7 +70,7 @@ matriz/
 | 3 | Members and roles | US-03 | 2 | Must | Planned |
 | 4 | Tasks | US-04, US-05, part of US-09 | 3 | Must | Done |
 | 5 | Assignees | US-07 | 4 | Should | Planned |
-| 6 | Dashboard, search, project deletion | US-06, rest of US-09, US-11 | 4 | Must | Planned |
+| 6 | Dashboard, search, project deletion | US-06, rest of US-09, US-11 | 4 | Must | Done |
 | 7 | Comments | US-08 | 4 | Should | Planned |
 | 8 | Manual progress override | US-10 | 6 | Should | Planned |
 | 9 | Verification, review and delivery | all | all done | Must | Planned |
@@ -140,6 +140,7 @@ For every increment the working method is the one from the course: ask the AI fo
 - **Acceptance:** AC-06.1 to AC-06.6; AC-09.1, AC-09.3; AC-11.1 to AC-11.5; EC-09.
 - **Checks:** counts equal the real totals (not one page) and sum correctly; the rounding rule; a deleted project leaves no orphaned data (checked in the database); only the Owner can delete.
 - **Done when:** the dashboard matches the wireframe and deletion is clean.
+- **Result (done):** Backend `mvn test`: 66 tests pass (56 before, plus 10 for search and deletion). Search: partial match ignoring case, among the caller's own projects only (another user's project with a matching name is never returned), the text is trimmed and blank means everything, `%` and `_` are matched as plain characters (the tests distinguish "A_B" from "AxB" and a lone "%"), no match is an empty page and not an error, more than 100 characters gives `400`, and results are paged. Deletion: the Owner deletes a project and every row inside it (memberships, tasks, assignments, comments) while another project's rows and all users stay; Member and Viewer get `403` and nothing is deleted; a non-member and a nonexistent project get `404`; afterwards the project, its tasks and its task list are unreachable for everyone and a second delete gives `404`. While writing these tests two failed because the *tests* encoded the search text twice (MockMvc encodes the URL template); the cause was confirmed and the tests now pass the text with `.param()`, as a real client would effectively send it. Frontend: 59 tests pass and the type check is clean (the search waits for a pause in typing and sends one request, not one per keystroke; "No projects match your search" is distinct from "You have no projects yet" and offers Clear search; a new search returns to the first page; Delete project is offered to the Owner only; the confirmation says how many tasks will be lost; cancel deletes nothing; confirming deletes and returns to the dashboard; a failure keeps the dialog open and shows the error, never a success). Verified for real with the seeded users: searches as Ana and Sofia (Sofia's private project is invisible to Ana), a lone `%` matching nothing, 101 characters refused; and a throwaway project with two tasks and a membership, created and then deleted, with the database row counts returning exactly to the original (3 users, 3 projects, 6 memberships, 18 tasks, 4 assignments, 3 comments). The dashboard counts and the `404`/`403` behaviour needed no change: they were completed by the earlier increments. The remaining Must item is member management (increment 3).
 
 ### Increment 7: Comments (US-08)
 

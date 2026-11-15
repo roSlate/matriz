@@ -17,6 +17,7 @@ public class ProjectService {
     private static final int NAME_MIN = 3;
     private static final int NAME_MAX = 100;
     private static final int DESCRIPTION_MAX = 1000;
+    private static final int SEARCH_MAX = 100;
 
     private final ProjectRepository projects;
     private final ProjectMemberRepository members;
@@ -45,10 +46,18 @@ public class ProjectService {
         return ProjectResponse.of(project, Role.OWNER, TaskCounts.Counts.NONE);
     }
 
-    /** The projects the user is a member of, newest first, with their counts and progress. */
+    /**
+     * The projects the user is a member of, newest first, with their counts and progress. If
+     * {@code search} has text after trimming, only projects whose name contains it (ignoring letter
+     * case) are returned (FR-09).
+     */
     @Transactional(readOnly = true)
-    public PageResponse<ProjectResponse> list(long userId, Pageable pageable) {
-        Page<ProjectMember> page = members.findByIdUserId(userId, pageable);
+    public PageResponse<ProjectResponse> list(long userId, String search, Pageable pageable) {
+        FieldValidation.create().optionalText("search", search, SEARCH_MAX).throwIfInvalid();
+        String text = FieldValidation.blankToNull(search);
+        Page<ProjectMember> page = text == null
+                ? members.findByIdUserId(userId, pageable)
+                : members.findByIdUserIdAndProjectNameContainingIgnoreCase(userId, text, pageable);
         List<Long> ids = page.getContent().stream().map(member -> member.getProject().getId()).toList();
         Map<Long, TaskCounts.Counts> counts = taskCounts.countsFor(ids);
 
@@ -85,6 +94,16 @@ public class ProjectService {
         project.update(FieldValidation.trim(request.name()), request.description() != null,
                 FieldValidation.blankToNull(request.description()));
         return response(project, role);
+    }
+
+    /**
+     * Deletes a project (FR-08). Only the Owner may. The database removes everything inside it, so no
+     * orphaned data is left: memberships, tasks, assignments and comments. Users are not touched.
+     */
+    @Transactional
+    public void delete(long projectId, Role role) {
+        ProjectAccess.requireAtLeast(role, Role.OWNER);
+        projects.delete(load(projectId));
     }
 
     private Project load(long projectId) {

@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { ApiError } from "../api/client";
-import { getProject, updateProject, type Project, type ProjectInput } from "../api/projects";
+import { deleteProject, getProject, updateProject, type Project, type ProjectInput } from "../api/projects";
 import { Alert } from "../components/ui/Alert";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { ProjectFormDialog } from "../features/projects/ProjectFormDialog";
 import { ProjectProgress } from "../features/projects/ProjectProgress";
 import { ROLE_LABELS } from "../features/projects/projectLabels";
@@ -21,8 +22,10 @@ type LoadState =
 /** One project: its name, role, description, counts and progress, and Edit for the Owner. */
 export default function ProjectDetailPage() {
   const { projectId } = useParams();
+  const navigate = useNavigate();
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -55,6 +58,11 @@ export default function ProjectDetailPage() {
     const updated = await updateProject(Number(projectId), input);
     setState({ status: "ready", project: updated });
     setEditing(false);
+  }
+
+  async function handleDelete() {
+    await deleteProject(Number(projectId));
+    navigate("/", { replace: true });
   }
 
   if (state.status === "loading") {
@@ -94,9 +102,14 @@ export default function ProjectDetailPage() {
           <Badge>{ROLE_LABELS[project.myRole]}</Badge>
         </div>
         {project.myRole === "OWNER" && (
-          <Button variant="secondary" onClick={() => setEditing(true)}>
-            Edit
-          </Button>
+          <div className="page-heading__actions">
+            <Button variant="secondary" onClick={() => setEditing(true)}>
+              Edit
+            </Button>
+            <Button variant="secondary" onClick={() => setDeleting(true)}>
+              Delete project
+            </Button>
+          </div>
         )}
       </div>
 
@@ -107,6 +120,21 @@ export default function ProjectDetailPage() {
       </Card>
 
       <TasksSection project={project} onChanged={refreshProject} />
+
+      {deleting && (
+        <ConfirmDialog
+          title={`Delete "${project.name}"?`}
+          message={
+            <p>
+              Its {project.taskCounts.total} {project.taskCounts.total === 1 ? "task" : "tasks"}, with their
+              comments and assignments, and its members will be permanently deleted. This cannot be undone.
+            </p>
+          }
+          confirmLabel="Delete project"
+          onConfirm={handleDelete}
+          onCancel={() => setDeleting(false)}
+        />
+      )}
 
       {editing && (
         <ProjectFormDialog
