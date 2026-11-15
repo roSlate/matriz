@@ -19,7 +19,7 @@ Everything beyond that sentence is an assumption, registered in [docs/constraint
 - Show progress at a glance.
 - Keep data private to the people with access, and keep it safe across restarts.
 
-## Planned MVP features
+## MVP features
 
 | Area | What it includes |
 |---|---|
@@ -45,6 +45,7 @@ What is *not* in the MVP (sprints, notifications, attachments, integrations, and
 | [openapi.yaml](openapi.yaml) | REST API contract of the MVP (OpenAPI 3.1). |
 | [docs/implementation-plan.md](docs/implementation-plan.md) | Increments for building the MVP, with checks, tests, order of cuts and status. |
 | [docs/ui/](docs/ui/) | Low-fidelity wireframes: dashboard, project detail, task detail. |
+| [docs/verification.md](docs/verification.md) | The nine verification cases with expected result, observed result and evidence; automated, scripted and manual checks kept apart; problems found; review; what could not be verified. The scripted check is in [docs/verification/](docs/verification/). |
 | [docs/review-log.md](docs/review-log.md) | Critical reviews of the specification and of the architecture pack: findings and the decision taken on each, plus the prompt comparison from Exercise 1. |
 | [AGENTS.md](AGENTS.md) | Persistent instructions for AI coding agents working on this repository. |
 
@@ -54,27 +55,54 @@ Java with Spring Boot (backend), React with TypeScript (frontend), PostgreSQL (d
 
 ## Current status
 
-**Stage: implementation, increments 0 to 8 of 9 done.** The Specification Pack and the Architecture Pack are written and have each been through an independent review. Working now: the skeleton and demo data; **authentication** (session, CSRF, login page); **projects** (a dashboard with role, task counts and progress; searching by name; creating, viewing, editing, and deleting for the Owner); and **tasks** (a task list with status and priority filters and paging, creating, a task page with status and priority changes, editing and deleting), and **members** (a list for everyone in the project; adding by email, changing roles and removing for the Owner), **assignees** (assigning and unassigning people on the task page, only Owners and Members, with the assignments removed when someone is removed or demoted), **comments** (on the task page, oldest first with "Show more", written by Owners and Members, shown with the author's name only), and the **manual progress override** (the Owner sets a whole number from 0 to 100 or goes back to the computed value, always labelled as manual with the computed value alongside), with access rules enforced on the server for every role. Not built yet: the verification and delivery work of increment 9. Progress is tracked in [docs/implementation-plan.md](docs/implementation-plan.md).
+**Stage: the MVP is implemented and verified (Ficha 03).** All nine increments of [docs/implementation-plan.md](docs/implementation-plan.md) are done:
 
-Next: verification and delivery (increment 9), then the testing and delivery work of the later fichas.
+| Area | State |
+|---|---|
+| Access | Login, logout, session, CSRF protection, login page, session-expired message. |
+| Projects | Dashboard with role, task counts and progress; search by name; create, view, edit; delete (Owner). |
+| Members | Add by email, change role, remove (Owner); the list is visible to every member. |
+| Tasks | List with status and priority filters and paging; create, edit, change status and priority, delete. |
+| Assignees | Assign and unassign Owners and Members; assignments are removed when someone is removed or demoted. |
+| Comments | Oldest first with "Show more"; written by Owners and Members; shown with the author's name only. |
+| Progress | Computed from the tasks; the Owner can set a manual value (0 to 100) or go back to the computed one. |
+| Security | Every rule is enforced on the server, also for direct API calls; a user without access gets `404`. |
+
+How it was checked, what was found and what could not be verified are in [docs/verification.md](docs/verification.md). Next: the testing work of Ficha 04 (test plan, end-to-end tests, quality and security review) and the delivery work of Ficha 05 (containers, continuous integration, release).
 
 ## Running the project (development)
 
-Prerequisites: Docker Desktop running (with WSL integration if you use WSL), Java 21, Maven 3.8 or later, Node 20.19 or later.
+### Requirements
 
-1. **Configuration.** Copy the example and choose a local database password (letters and digits only). Use the same value for `POSTGRES_PASSWORD` and `DB_PASSWORD`. Set it before the first start, because PostgreSQL only reads it when it creates the volume. `.env` is ignored by Git.
+- Docker Desktop running (with WSL integration if you use WSL): the database and the backend tests use containers.
+- Java 21 and Maven 3.8 or later.
+- Node 20.19 or later (with npm).
+- Optional: Python 3, only for the scripted check in [docs/verification/](docs/verification/).
 
-   ```bash
-   cp .env.example .env
-   ```
+### Configuration
 
-2. **Database** (PostgreSQL 17 in a container, listening on 127.0.0.1 only):
+Copy the example and choose a local database password (letters and digits only). Use the same value for `POSTGRES_PASSWORD` and `DB_PASSWORD`. Set it before the first start, because PostgreSQL only reads it when it creates the volume. `.env` is ignored by Git; only `.env.example`, with fictional values, is versioned.
+
+```bash
+cp .env.example .env
+```
+
+| Variable | Used by | Meaning |
+|---|---|---|
+| `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | `compose.yaml` | Name, user and password of the PostgreSQL 17 container. The password has no default: the container does not start without it. |
+| `DB_URL` | backend | JDBC URL of the database (default `jdbc:postgresql://localhost:5432/matriz`). |
+| `DB_USER`, `DB_PASSWORD` | backend | Database user (default `matriz`) and password (no default). |
+| `SPRING_PROFILES_ACTIVE` | backend | Set to `dev` to also load the demo data. Never in a real deployment. |
+
+### Start-up
+
+1. **Database** (PostgreSQL 17 in a container, listening on 127.0.0.1 only; the data lives in a named volume):
 
    ```bash
    docker compose up -d db
    ```
 
-3. **Backend.** The `dev` profile also loads the demo data. Flyway applies the schema and the demo data once; restarting never duplicates or wipes data.
+2. **Backend.** The `dev` profile also loads the demo data. Flyway creates the schema and loads the demo data once; restarting never duplicates or wipes data.
 
    ```bash
    cd backend
@@ -85,7 +113,7 @@ Prerequisites: Docker Desktop running (with WSL integration if you use WSL), Jav
 
    Health check: `curl http://localhost:8080/api/v1/actuator/health` returns `{"status":"UP",...}`.
 
-4. **Frontend** (in another terminal):
+3. **Frontend** (in another terminal):
 
    ```bash
    cd frontend
@@ -93,13 +121,15 @@ Prerequisites: Docker Desktop running (with WSL integration if you use WSL), Jav
    npm run dev
    ```
 
-   Open http://localhost:5173 and log in with one of the demo accounts below. The dev server forwards `/api` to the backend on port 8080.
+   Open http://localhost:5173 and log in with one of the demo accounts below. The dev server forwards `/api` to the backend on port 8080, so the browser sees one address and no cross-origin rules are needed.
 
-**Tests.** Backend: `cd backend && mvn verify` (starts a temporary PostgreSQL container, so Docker must be running; the first run downloads the image and takes a few minutes). Frontend: `cd frontend && npm test`; type check with `npm run typecheck`.
+### Database schema and demo data
 
-**Stopping.** `docker compose down` stops the database and keeps its data. `docker compose down -v` also deletes the data (the demo data comes back on the next start of the backend with the `dev` profile).
+- **Schema.** The six tables (users, projects, project members, tasks, task assignments, comments), their constraints and indexes are created by the Flyway migration `backend/src/main/resources/db/migration/V1__create_schema.sql`, written from [docs/database.md](docs/database.md). It runs automatically when the backend starts on an empty database, and not again.
+- **Demo data.** `backend/src/main/resources/db/demo/V1000__demo_data.sql` is a separate Flyway location, enabled only by the `dev` profile: three fictional users, three projects with different access for each, and a few tasks, assignments and comments. It runs once.
+- **Starting again from scratch.** `docker compose down -v` deletes the database volume; the next start of the backend recreates the schema and the demo data.
 
-**Demo accounts** (fictional, development only, loaded by the `dev` profile; all use the password `matriz-demo`):
+**Demo accounts** (fictional, development only; all use the password `matriz-demo`, stored as a BCrypt hash):
 
 | User | Email | Website redesign | Client onboarding | Team handbook |
 |---|---|---|---|---|
@@ -107,4 +137,47 @@ Prerequisites: Docker Desktop running (with WSL integration if you use WSL), Jav
 | Rui Costa | rui@example.org | Member | Owner | no access |
 | Sofia Lima | sofia@example.org | Viewer | no access | Owner |
 
-Never activate the `dev` profile in a real deployment.
+### Tests
+
+| What | Command |
+|---|---|
+| Backend (unit and integration tests against a temporary PostgreSQL container; the first run downloads the image and takes a few minutes) | `cd backend && mvn verify` |
+| Frontend tests, type check and production build | `cd frontend && npm test`, `npm run typecheck`, `npm run build` |
+| Scripted check of the nine cases of the ficha against the running application (dev profile; creates and removes throwaway data) | `python3 docs/verification/verify-api.py 1`, restart the backend, `python3 docs/verification/verify-api.py 2` |
+
+The results of the last full run are in [docs/verification.md](docs/verification.md).
+
+### Stopping
+
+`docker compose down` stops the database and keeps its data. `docker compose down -v` also deletes the data.
+
+## Authentication and the API
+
+The API is described in [openapi.yaml](openapi.yaml) (OpenAPI 3.1) and lives under `/api/v1`.
+
+- **Login.** `POST /api/v1/auth/login` with `{"email": "...", "password": "..."}`. A wrong password and an unknown email give the same `401` and the same message. On success the server starts a session and answers with the user.
+- **Session.** A server-side session in the `JSESSIONID` cookie (HTTP-only, `SameSite=Lax`). It ends after 30 minutes without activity or on `POST /api/v1/auth/logout`. Every route except login and the health check answers `401` without a session. `GET /api/v1/users/me` returns the signed-in user.
+- **CSRF protection.** The server sets an `XSRF-TOKEN` cookie that scripts can read. Requests that change data (`POST`, `PUT`, `PATCH`, `DELETE`) must send its value in the `X-XSRF-TOKEN` header, otherwise they get `403`. The frontend does this in one place, `frontend/src/api/client.ts`.
+- **Errors.** Problem Details (RFC 9457), with a `code` when the status alone is ambiguous and an `errors` list for invalid fields. A user with no access to a project gets `404`, the same as for a project that does not exist; a user with access but a role that is too low gets `403`.
+
+```bash
+# Example: log in and read the profile (the CSRF token comes from the first response's cookie)
+curl -c jar -s -o /dev/null http://localhost:8080/api/v1/users/me
+TOKEN=$(awk '$6=="XSRF-TOKEN"{print $7}' jar)
+curl -s -b jar -c jar -X POST http://localhost:8080/api/v1/auth/login \
+  -H "X-XSRF-TOKEN: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"email":"ana@example.org","password":"matriz-demo"}'
+curl -s -b jar http://localhost:8080/api/v1/users/me
+```
+
+## Repository layout
+
+```
+matriz/
+├── README.md, AGENTS.md, openapi.yaml, compose.yaml, .env.example
+├── docs/                 specification, design, implementation plan, verification
+│   └── verification/     the scripted check and its recorded output
+├── backend/              Spring Boot (Maven): identity, project, task, comment, security, common
+│   └── src/main/resources/db/{migration,demo}
+└── frontend/             React and TypeScript (Vite): api, components/ui, features, pages
+```
