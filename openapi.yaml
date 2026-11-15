@@ -227,6 +227,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -274,6 +276,8 @@ paths:
       responses:
         '204':
           description: Project deleted.
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -332,6 +336,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -359,6 +365,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Member'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -470,6 +478,8 @@ paths:
       responses:
         '204':
           description: Member removed.
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -569,6 +579,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -617,6 +629,8 @@ paths:
       responses:
         '204':
           description: Task deleted.
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -692,6 +706,8 @@ paths:
       responses:
         '204':
           description: Assignment removed.
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -811,7 +827,9 @@ components:
 
   responses:
     BadRequest:
-      description: Invalid input. `errors` names each invalid field.
+      description: |
+        Invalid input: a malformed identifier or query value (a fixed message), or invalid fields
+        in the body (then `errors` names each invalid field).
       content:
         application/problem+json:
           schema:
@@ -1212,7 +1230,9 @@ components:
 
     Problem:
       type: object
-      description: Problem Details (RFC 9457). Contains no internal information.
+      description: |
+        Problem Details (RFC 9457). Contains no internal information. Errors that belong to no
+        operation in particular (`405`, `415`, `500`) use the same format.
       required: [title, status]
       properties:
         type:

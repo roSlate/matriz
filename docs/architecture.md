@@ -115,13 +115,15 @@ Inside each module the layers are the same: controller (HTTP and request or resp
 | identity | nothing |
 | project | identity. It also **defines two ports** (see below) that the task module implements, so the compile-time dependency still points from task to project. |
 | task | project (access policy, project lookup, the ports it implements), identity |
-| comment | task, project (access policy), identity |
+| comment | project (access policy), identity. It has **no compile-time dependency on the task module**: a comment holds the task's identifier as a plain number. |
 
 No module depends on another that depends on it (no cycles).
 
+As built, the comment routes (`/tasks/{taskId}/comments`) are protected by the task module's access step, because that step is attached to every path under `/tasks/{taskId}`. The comment module therefore relies on that path pattern at run time, not on a call. The authorisation tests of the comment API (a non-member gets `404`, also with an invalid body) guard this. The task module also asks the access policy for the role of **another** user (`ProjectAccess.roleOf`), to check that someone can be assigned to a task; this is part of the access policy, not a third mechanism.
+
 **Port 1, task counts (read).** The project module needs the number of tasks per status to build its progress and the dashboard cards. It defines a small interface `TaskCounts` ("counts per status for a project"); the task module implements it.
 
-**Port 2, membership changes (event).** When a member is removed from a project or demoted to Viewer, their assignments in that project must go. The project module publishes an in-process event; the task module listens and deletes its own assignments. The project module never calls the task module.
+**Port 2, membership changes (event).** When a member is removed from a project or demoted to Viewer, their assignments in that project must go. The project module publishes an in-process event (`MembershipChanged`); a listener in the task module (`MembershipChangeListener`) deletes its own assignments, in the transaction of the change. The project module never calls the task module. As built, the event is published for both removal and demotion; on removal the database cascade has already removed the rows, so the listener finds nothing to do.
 
 ### Exceptions to "a module touches only its own tables"
 
@@ -137,7 +139,7 @@ Every operation on a project or on anything inside it follows the same order:
 
 1. **Identify the user** from the session (never from the request body).
 2. **Access step**, a request-level step keyed by the identifiers in the path, before the body is read. It finds the project that owns the target (a task is resolved to its project first) and looks up the user's membership. No such resource, or no membership, gives `404`.
-3. **Parse and validate the body.** An invalid body, including any field not in the contract, gives `400`.
+3. **Parse and validate the body.** An invalid body gives `400`: a field that is not in the contract, a value of the wrong JSON type (a number for text, text for a number, a decimal for a whole number), or a value that breaks a rule.
 4. **Role check in the service.** If the user's role is below the operation's minimum role, `403`; otherwise the operation runs.
 
 The resulting order is `404`, then `400`, then `403`. A non-member therefore never learns whether a project exists by sending a malformed body (CC-05), and a Viewer who sends an invalid body gets `400`, which reveals nothing because a Viewer already has access.
@@ -177,7 +179,7 @@ sequenceDiagram
 | CC-05 (no existence leak) | The order of checks: `404`, then `400`, then `403`. |
 | NFR-02, S-04 (hashed passwords) | Password encoder in the identity module only. |
 | NFR-03, S-03 (server decides owner and author) | Services take the user from the session; request objects have no owner or author fields, and unknown fields are refused. |
-| NFR-04, S-05, CC-02 (validation, no leaked errors) | Validation in the request objects and services; one error handler. |
+| NFR-04, S-05, CC-02 (validation, no leaked errors) | Validation in the services (`FieldValidation`); the JSON mapper refuses unknown fields and wrongly typed values (`application.yml` and `StrictJsonConfig`); one error handler with fixed texts, also for unknown routes and bad query values. |
 | NFR-06 (persistence) | PostgreSQL; schema by migrations. |
 | NFR-07, NFR-08 (usable, consistent UI) | A single API client in the frontend; the UI updates from the API's confirmed response. |
 | NFR-09, NFR-10 (testable, reproducible) | Layers can be unit tested; integration tests run against a real database; Docker Compose later. |
@@ -187,7 +189,7 @@ sequenceDiagram
 
 - **Module boundaries erode** over time in a single code base. Mitigation: the dependency rules above, enforced in review.
 - **In-memory sessions** are lost on restart. Acceptable for the MVP, and users simply log in again. A database-backed session store would be the next step.
-- **Authorisation depends on two things being complete:** the access step must cover every route that has an identifier in its path, and every service must assert the role for its operation. A route that forgets either is a vulnerability. Mitigation: authorisation tests for every write endpoint (Ficha 04), a test for CC-05, and a review checklist.
+- **Authorisation depends on two things being complete:** the access step must cover every route that has an identifier in its path, and every service must assert the role for its operation. A route that forgets either is a vulnerability. Mitigation: authorisation tests for every write endpoint and a test for CC-05 (written with each increment, with mutation checks that disable the guard; see [verification.md](verification.md)), and a review checklist.
 - **Two cross-module mechanisms** (the `TaskCounts` port and the membership event) must stay the only ones. Any new need to cross a module boundary is a design decision to record here.
 - **No brute-force protection on login** (accepted, see [constraints.md](constraints.md), section 6).
 - **Docker depends on Docker Desktop running** (checked: Docker 29.1.3 and Compose 2.40 work from WSL). It is needed for the integration tests (Ficha 04) and for containers (Ficha 05). If it is not running, integration tests cannot start; a separate test database is the fallback.

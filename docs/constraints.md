@@ -116,6 +116,8 @@ The MVP is accepted when all of these can be shown:
 6. At least three automated tests pass: a validation rule, an authorisation scenario, and create-then-read persistence. Manual checks are recorded separately.
 7. The application starts from a clean checkout by following the README.
 
+The status of each item, with its evidence, is in [verification.md](verification.md), section 8.
+
 ## 6. Scope limitations (known and accepted)
 
 - The progress percentage counts tasks equally; it ignores effort and deadlines, and a manual override can become stale. The UI labels manual values to reduce this.
