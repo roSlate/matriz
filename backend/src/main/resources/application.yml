@@ -12,6 +12,9 @@ spring:
       ddl-auto: validate   # the schema belongs to the Flyway migrations
   flyway:
     enabled: true
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true   # a field that is not in the contract is refused with 400
 
 server:
   port: 8080

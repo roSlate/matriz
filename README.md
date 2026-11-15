@@ -54,9 +54,9 @@ Java with Spring Boot (backend), React with TypeScript (frontend), PostgreSQL (d
 
 ## Current status
 
-**Stage: implementation, increment 0 of 9 done.** The Specification Pack and the Architecture Pack are written and have each been through an independent review. The project skeleton runs: database, schema migration, demo data, a backend that answers a health check, and a frontend that reaches it. There are no features yet; they arrive with the increments of [docs/implementation-plan.md](docs/implementation-plan.md), which also tracks progress.
+**Stage: implementation, increments 0 and 1 of 9 done.** The Specification Pack and the Architecture Pack are written and have each been through an independent review. Working now: the project skeleton, the database with demo data, and **authentication**: log in, log out and the current user, with a server-side session, CSRF protection and a login page. The dashboard after login is still a placeholder. Progress is tracked in [docs/implementation-plan.md](docs/implementation-plan.md).
 
-Next: authentication (increment 1), then projects, members, tasks, and the rest.
+Next: projects (increment 2), then members, tasks, and the rest.
 
 ## Running the project (development)
 
@@ -93,7 +93,7 @@ Prerequisites: Docker Desktop running (with WSL integration if you use WSL), Jav
    npm run dev
    ```
 
-   Open http://localhost:5173. The dev server forwards `/api` to the backend on port 8080.
+   Open http://localhost:5173 and log in with one of the demo accounts below. The dev server forwards `/api` to the backend on port 8080.
 
 **Tests.** Backend: `cd backend && mvn verify` (starts a temporary PostgreSQL container, so Docker must be running; the first run downloads the image and takes a few minutes). Frontend: `cd frontend && npm test`; type check with `npm run typecheck`.
 

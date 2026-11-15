@@ -65,7 +65,7 @@ matriz/
 | # | Increment | Stories | Depends on | Priority | Status |
 |---|---|---|---|---|---|
 | 0 | Skeleton, database, demo data | none (setup) | none | Must | Done |
-| 1 | Authentication | US-01 | 0 | Must | Planned |
+| 1 | Authentication | US-01 | 0 | Must | Done |
 | 2 | Projects: create, list, view, edit | US-02 | 1 | Must | Planned |
 | 3 | Members and roles | US-03 | 2 | Must | Planned |
 | 4 | Tasks | US-04, US-05, part of US-09 | 3 | Must | Planned |
@@ -95,6 +95,7 @@ For every increment the working method is the one from the course: ask the AI fo
 - **Acceptance:** AC-01.1 to AC-01.7; CC-02 (no internals in errors).
 - **Checks:** valid and invalid credentials (same message); a request without a session is refused; logout invalidates the session; a missing CSRF token is refused; the password hash never appears in any response.
 - **Done when:** the demo users can log in and out through the interface.
+- **Result (done):** Backend `mvn test`: 22 tests pass (8 schema, 10 API with MockMvc, 4 over real HTTP against the embedded server for cookies and the CSRF handshake). Frontend: type check, production build and 8 tests pass (login validation without contacting the server, whitespace-only password, the server's message kept with the email, successful login, logout, session-expired message, no false "expired" message for a visitor). Checked for real through the Vite proxy with the seeded user: anonymous request `401` with the `XSRF-TOKEN` cookie; login without the token `403`; wrong password and unknown email give identical answers; login works with the email in upper case; `/users/me` with the session `200`; logout `204`; the old session then `401`; an unknown field `400`. Findings during the work: (1) MockMvc does not show the `Set-Cookie` headers, so the first cookie test was wrong, and a second one passed vacuously; both were replaced by real-HTTP tests. (2) Anonymous requests created a session as a side effect of Spring's saved-request feature, now disabled. (3) The CSRF cookie now carries `SameSite=Lax`. Not covered here: the `Secure` flag of the session cookie (needs HTTPS, planned for the delivery stage) and brute-force protection (accepted, constraints.md section 6).
 
 ### Increment 2: Projects: create, list, view, edit (US-02)
 

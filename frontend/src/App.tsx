@@ -1,27 +1,19 @@
-import { useEffect, useState } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
+import RequireAuth from "./auth/RequireAuth";
+import AppLayout from "./pages/AppLayout";
+import DashboardPage from "./pages/DashboardPage";
+import LoginPage from "./pages/LoginPage";
 
-type Status = "checking" | "up" | "down";
-
-// Placeholder page for the project skeleton: it only shows whether the backend answers
-// through the /api proxy. Real screens arrive with the increments of docs/implementation-plan.md.
 export default function App() {
-  const [status, setStatus] = useState<Status>("checking");
-
-  useEffect(() => {
-    fetch("/api/v1/actuator/health")
-      .then((response) => setStatus(response.ok ? "up" : "down"))
-      .catch(() => setStatus("down"));
-  }, []);
-
   return (
-    <main className="page">
-      <section className="panel">
-        <h1>Matriz</h1>
-        <p>Project and task management for teams.</p>
-        <p role="status">
-          Backend: <strong data-status={status}>{status}</strong>
-        </p>
-      </section>
-    </main>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route element={<RequireAuth />}>
+        <Route element={<AppLayout />}>
+          <Route index element={<DashboardPage />} />
+        </Route>
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }

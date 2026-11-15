@@ -18,8 +18,12 @@
 
   /* Accent: cool aqua blue */
   --color-accent: #1d6f9f;
+  --color-accent-top: #1f78a6;   /* white text on this and on --color-accent passes 4.5:1 */
+  --color-accent-deep: #175d85;
   --color-accent-contrast: #ffffff;
   --color-accent-soft: #d6ecf8;
+  --color-danger-soft: #fdeceb;
+  --color-danger-border: #e0a39b;
 
   /* Feedback */
   --color-danger: #a8321f;
