@@ -1,0 +1,40 @@
+/*
+ * Design tokens. Every colour, radius and spacing used by the interface comes from here, so the
+ * visual style (a soft, early-2000s "soft club" look with light crystalline accents, see
+ * docs/constraints.md, section 4.1) can be refined in one place.
+ * Text stays dark on light surfaces: contrast comes before decoration.
+ */
+:root {
+  /* Surfaces */
+  --color-bg-top: #e9f1fb;
+  --color-bg-bottom: #f6f3fc;
+  --color-surface: rgba(255, 255, 255, 0.72);
+  --color-surface-strong: #ffffff;
+  --color-border: rgba(120, 150, 190, 0.45);
+
+  /* Text */
+  --color-text: #1b2536;
+  --color-text-muted: #46536a;
+
+  /* Accent: cool aqua blue */
+  --color-accent: #1d6f9f;
+  --color-accent-contrast: #ffffff;
+  --color-accent-soft: #d6ecf8;
+
+  /* Feedback */
+  --color-danger: #a8321f;
+  --color-success: #1d7a4a;
+
+  /* Shape and space */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 40px;
+
+  --shadow-soft: 0 8px 30px rgba(60, 100, 150, 0.14);
+  --font-body: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+}

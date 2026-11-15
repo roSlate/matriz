@@ -1,0 +1,5 @@
+# Development profile. Adds the fictional demo data (users, projects, tasks) to the schema.
+# Never activate it in a real deployment (assumption A-16).
+spring:
+  flyway:
+    locations: classpath:db/migration,classpath:db/demo

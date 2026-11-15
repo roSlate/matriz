@@ -43,6 +43,7 @@ What is *not* in the MVP (sprints, notifications, attachments, integrations, and
 | [docs/architecture.md](docs/architecture.md) | Architecture decision (modular monolith), technology choices, components, order of access checks. |
 | [docs/database.md](docs/database.md) | Data model: entities, relationships, integrity rules and the ER diagram. |
 | [openapi.yaml](openapi.yaml) | REST API contract of the MVP (OpenAPI 3.1). |
+| [docs/implementation-plan.md](docs/implementation-plan.md) | Increments for building the MVP, with checks, tests, order of cuts and status. |
 | [docs/ui/](docs/ui/) | Low-fidelity wireframes: dashboard, project detail, task detail. |
 | [docs/review-log.md](docs/review-log.md) | Critical reviews of the specification and of the architecture pack: findings and the decision taken on each, plus the prompt comparison from Exercise 1. |
 | [AGENTS.md](AGENTS.md) | Persistent instructions for AI coding agents working on this repository. |
@@ -53,6 +54,57 @@ Java with Spring Boot (backend), React with TypeScript (frontend), PostgreSQL (d
 
 ## Current status
 
-**Stage: architecture and design done; implementation not started.** The Specification Pack (requirements, user stories, constraints, agent instructions) and the Architecture Pack (architecture, data model, API contract, wireframes) are written and have each been through an independent review. There is no application code yet, so there is nothing to install or run. Installation, configuration and test instructions will be added when the implementation exists.
+**Stage: implementation, increment 0 of 9 done.** The Specification Pack and the Architecture Pack are written and have each been through an independent review. The project skeleton runs: database, schema migration, demo data, a backend that answers a health check, and a frontend that reaches it. There are no features yet; they arrive with the increments of [docs/implementation-plan.md](docs/implementation-plan.md), which also tracks progress.
 
-Next stages: MVP implementation, testing and review, containerisation and delivery.
+Next: authentication (increment 1), then projects, members, tasks, and the rest.
+
+## Running the project (development)
+
+Prerequisites: Docker Desktop running (with WSL integration if you use WSL), Java 21, Maven 3.8 or later, Node 20.19 or later.
+
+1. **Configuration.** Copy the example and choose a local database password (letters and digits only). Use the same value for `POSTGRES_PASSWORD` and `DB_PASSWORD`. Set it before the first start, because PostgreSQL only reads it when it creates the volume. `.env` is ignored by Git.
+
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Database** (PostgreSQL 17 in a container, listening on 127.0.0.1 only):
+
+   ```bash
+   docker compose up -d db
+   ```
+
+3. **Backend.** The `dev` profile also loads the demo data. Flyway applies the schema and the demo data once; restarting never duplicates or wipes data.
+
+   ```bash
+   cd backend
+   mvn -DskipTests package
+   set -a && . ../.env && set +a
+   SPRING_PROFILES_ACTIVE=dev java -jar target/matriz-backend-0.1.0-SNAPSHOT.jar
+   ```
+
+   Health check: `curl http://localhost:8080/api/v1/actuator/health` returns `{"status":"UP",...}`.
+
+4. **Frontend** (in another terminal):
+
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+   Open http://localhost:5173. The dev server forwards `/api` to the backend on port 8080.
+
+**Tests.** Backend: `cd backend && mvn verify` (starts a temporary PostgreSQL container, so Docker must be running; the first run downloads the image and takes a few minutes). Frontend: `cd frontend && npm test`; type check with `npm run typecheck`.
+
+**Stopping.** `docker compose down` stops the database and keeps its data. `docker compose down -v` also deletes the data (the demo data comes back on the next start of the backend with the `dev` profile).
+
+**Demo accounts** (fictional, development only, loaded by the `dev` profile; all use the password `matriz-demo`):
+
+| User | Email | Website redesign | Client onboarding | Team handbook |
+|---|---|---|---|---|
+| Ana Silva | ana@example.org | Owner | Member | no access |
+| Rui Costa | rui@example.org | Member | Owner | no access |
+| Sofia Lima | sofia@example.org | Viewer | no access | Owner |
+
+Never activate the `dev` profile in a real deployment.

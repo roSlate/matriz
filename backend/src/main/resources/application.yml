@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: matriz
+  datasource:
+    # Values come from the environment (see .env.example). Only the URL and user have defaults.
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/matriz}
+    username: ${DB_USER:matriz}
+    password: ${DB_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate   # the schema belongs to the Flyway migrations
+  flyway:
+    enabled: true
+
+server:
+  port: 8080
+  servlet:
+    session:
+      timeout: 30m          # S-15: expires after 30 minutes of inactivity
+      cookie:
+        http-only: true
+        same-site: lax
+
+management:
+  endpoints:
+    web:
+      base-path: /api/v1/actuator
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
