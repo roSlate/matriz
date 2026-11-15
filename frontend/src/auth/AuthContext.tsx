@@ -30,17 +30,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [sessionExpired, setSessionExpired] = useState(false);
   const wasSignedIn = useRef(false);
 
-  useEffect(() => {
-    wasSignedIn.current = user !== null;
-  }, [user]);
+  // The flag is set at the moment the user is stored, not in an effect after the render: a 401
+  // that arrives right after the first render must still be reported as an expired session.
+  const storeUser = useCallback((next: User | null) => {
+    wasSignedIn.current = next !== null;
+    setUser(next);
+  }, []);
 
   // First check of the session. A 401 here only means "nobody is signed in".
   useEffect(() => {
     apiRequest<User>("/users/me", { handleUnauthorized: false })
-      .then(setUser)
-      .catch(() => setUser(null))
+      .then(storeUser)
+      .catch(() => storeUser(null))
       .finally(() => setLoading(false));
-  }, []);
+  }, [storeUser]);
 
   // Any later 401 means the session ended while the user was working.
   useEffect(() => {
@@ -48,10 +51,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (wasSignedIn.current) {
         setSessionExpired(true);
       }
-      setUser(null);
+      storeUser(null);
     });
     return () => setUnauthorizedHandler(null);
-  }, []);
+  }, [storeUser]);
 
   const login = useCallback(async (email: string, password: string) => {
     const signedIn = await apiRequest<User>("/auth/login", {
@@ -60,8 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       handleUnauthorized: false,
     });
     setSessionExpired(false);
-    setUser(signedIn);
-  }, []);
+    storeUser(signedIn);
+  }, [storeUser]);
 
   const logout = useCallback(async () => {
     try {
@@ -70,8 +73,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Whatever the server answered, this browser is done with the session.
     }
     setSessionExpired(false);
-    setUser(null);
-  }, []);
+    storeUser(null);
+  }, [storeUser]);
 
   const value = useMemo(
     () => ({ user, loading, sessionExpired, login, logout }),
