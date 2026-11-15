@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ApiError } from "../api/client";
+import { ApiError, errorMessage } from "../api/client";
 import {
   clearProgressOverride,
   deleteProject,
@@ -90,7 +90,7 @@ export default function ProjectDetailPage() {
       const updated = await clearProgressOverride(Number(projectId));
       setState({ status: "ready", project: updated });
     } catch (error) {
-      setProgressError(error instanceof ApiError ? error.message : "Could not clear the manual progress. Please try again.");
+      setProgressError(errorMessage(error, "Could not clear the manual progress. Please try again."));
     } finally {
       setClearingProgress(false);
     }

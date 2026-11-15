@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
-import { ApiError } from "../api/client";
+import { errorMessage } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Alert } from "../components/ui/Alert";
 import { Button } from "../components/ui/Button";
@@ -48,7 +48,7 @@ export default function LoginPage() {
       await login(email.trim(), password);
     } catch (error) {
       // The email stays in the form; the message is the server's own (the same for any bad login).
-      setFormError(error instanceof ApiError ? error.message : "Something went wrong. Please try again.");
+      setFormError(errorMessage(error));
     } finally {
       inFlight.current = false;
       setSubmitting(false);

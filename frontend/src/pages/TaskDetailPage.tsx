@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ApiError } from "../api/client";
+import { ApiError, errorMessage } from "../api/client";
 import { getProject, type Project } from "../api/projects";
 import {
   deleteTask,
@@ -108,7 +108,7 @@ export default function TaskDetailPage() {
     try {
       await save(changes);
     } catch (error) {
-      setSaveError(error instanceof ApiError ? error.message : "Something went wrong. Please try again.");
+      setSaveError(errorMessage(error));
     } finally {
       inFlight.current = false;
       setSaving(false);

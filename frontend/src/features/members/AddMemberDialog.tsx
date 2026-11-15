@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent } from "react";
-import { ApiError } from "../../api/client";
+import { ApiError, errorMessage } from "../../api/client";
 import type { AssignableRole, MemberInput } from "../../api/members";
 import { Alert } from "../../components/ui/Alert";
 import { Button } from "../../components/ui/Button";
@@ -59,7 +59,7 @@ export function AddMemberDialog({ onSubmit, onClose }: AddMemberDialogProps) {
         setEmailError(error.fieldErrors.find((item) => item.field === "email")?.message);
         setFormError(error.fieldErrors.find((item) => item.field !== "email")?.message ?? null);
       } else {
-        setFormError(error instanceof ApiError ? error.message : "Something went wrong. Please try again.");
+        setFormError(errorMessage(error));
       }
     } finally {
       inFlight.current = false;

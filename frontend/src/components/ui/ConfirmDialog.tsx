@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from "react";
-import { ApiError } from "../../api/client";
+import { errorMessage } from "../../api/client";
 import { Alert } from "./Alert";
 import { Button } from "./Button";
 import { Dialog } from "./Dialog";
@@ -31,7 +31,7 @@ export function ConfirmDialog({ title, message, confirmLabel, onConfirm, onCance
     try {
       await onConfirm();
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : "Something went wrong. Please try again.");
+      setError(errorMessage(failure));
     } finally {
       inFlight.current = false;
       setWorking(false);

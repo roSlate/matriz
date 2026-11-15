@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent } from "react";
-import { ApiError } from "../../api/client";
+import { ApiError, errorMessage } from "../../api/client";
 import type { TaskInput, TaskPriority, TaskStatus } from "../../api/tasks";
 import { Alert } from "../../components/ui/Alert";
 import { Button } from "../../components/ui/Button";
@@ -80,7 +80,7 @@ export function TaskFormDialog({ title, submitLabel, initial = DEFAULTS, onSubmi
         }
         setFieldErrors(fromServer);
       } else {
-        setFormError(error instanceof ApiError ? error.message : "Something went wrong. Please try again.");
+        setFormError(errorMessage(error));
       }
     } finally {
       inFlight.current = false;

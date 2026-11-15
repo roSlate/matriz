@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent } from "react";
-import { ApiError } from "../../api/client";
+import { ApiError, errorMessage } from "../../api/client";
 import { Alert } from "../../components/ui/Alert";
 import { Button } from "../../components/ui/Button";
 import { Dialog } from "../../components/ui/Dialog";
@@ -55,7 +55,7 @@ export function ProgressOverrideDialog({ initial, onSubmit, onClose }: ProgressO
       if (error instanceof ApiError && error.fieldErrors.some((item) => item.field === "percentage")) {
         setFieldError(error.fieldErrors.find((item) => item.field === "percentage")?.message);
       } else {
-        setFormError(error instanceof ApiError ? error.message : "Something went wrong. Please try again.");
+        setFormError(errorMessage(error));
       }
     } finally {
       inFlight.current = false;

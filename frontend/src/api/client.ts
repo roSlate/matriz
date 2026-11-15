@@ -15,6 +15,14 @@ export class ApiError extends Error {
   }
 }
 
+/** The text shown when something fails and the server gave no message of its own. */
+export const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";
+
+/** The message to show the user for a failed request: the server's own text, or the given fallback. */
+export function errorMessage(error: unknown, fallback: string = DEFAULT_ERROR_MESSAGE): string {
+  return error instanceof ApiError ? error.message : fallback;
+}
+
 const API_BASE = "/api/v1";
 const CSRF_COOKIE = "XSRF-TOKEN";
 const CSRF_HEADER = "X-XSRF-TOKEN";
@@ -87,7 +95,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   }
   throw new ApiError(
     response.status,
-    problem?.detail ?? "Something went wrong. Please try again.",
+    problem?.detail ?? DEFAULT_ERROR_MESSAGE,
     problem?.errors ?? [],
   );
 }

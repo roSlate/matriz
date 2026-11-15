@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ApiError } from "../../api/client";
+import { errorMessage } from "../../api/client";
 import {
   addMember,
   changeMemberRole,
@@ -66,7 +66,7 @@ export function MembersSection({ project }: { project: Project }) {
       );
     } catch (error) {
       setActionError(
-        error instanceof ApiError ? error.message : "Could not change the role. Please try again.",
+        errorMessage(error, "Could not change the role. Please try again."),
       );
     } finally {
       setBusyUserId(null);

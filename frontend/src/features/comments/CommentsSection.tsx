@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ApiError } from "../../api/client";
+import { ApiError, errorMessage } from "../../api/client";
 import { addComment, listComments, type Comment } from "../../api/comments";
 import { Alert } from "../../components/ui/Alert";
 import { Button } from "../../components/ui/Button";
@@ -128,7 +128,7 @@ export function CommentsSection({ taskId, canWrite }: CommentsSectionProps) {
       if (error instanceof ApiError && error.fieldErrors.some((item) => item.field === "content")) {
         setFieldError(error.fieldErrors.find((item) => item.field === "content")?.message);
       } else {
-        setFormError(error instanceof ApiError ? error.message : "Something went wrong. Please try again.");
+        setFormError(errorMessage(error));
       }
     } finally {
       inFlight.current = false;
