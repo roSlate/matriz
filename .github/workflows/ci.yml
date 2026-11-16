@@ -1,7 +1,9 @@
 # Continuous integration for Matriz.
 # On every push and pull request: build and test the backend and the frontend, and only when both
-# pass, build the Docker images and smoke-test the whole stack. Nothing is published and no secret
-# is used: the only credential below is a throwaway password created for the run.
+# pass, build the Docker images, smoke-test the whole stack and run the end-to-end tests in a real
+# browser against it. Nothing is published and no secret is used: the only credential below is a
+# throwaway password created for the run. The runner image is pinned, so a change of the default
+# image cannot break the pipeline unannounced.
 name: CI
 
 on:
@@ -20,7 +22,7 @@ concurrency:
 jobs:
   backend:
     name: Backend (build and tests)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -37,7 +39,7 @@ jobs:
 
   frontend:
     name: Frontend (type check, tests, build)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     defaults:
       run:
@@ -59,10 +61,10 @@ jobs:
         run: npm run build
 
   docker:
-    name: Docker images and smoke test
+    name: Docker images, smoke test and end-to-end tests
     # The images are built only after the required checks have passed.
     needs: [backend, frontend]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -97,6 +99,30 @@ jobs:
           curl -fsS -b "$jar" "$WEB/api/v1/users/me" | grep -q '"email":"ana@example.org"'
           # The list of projects comes from the real database.
           curl -fsS -b "$jar" "$WEB/api/v1/projects" | grep -q '"Website redesign"'
+      # The end-to-end tests are a separate project (e2e/) so that the frontend and the Docker build
+      # do not depend on them. They drive the stack that is already running, in Chromium.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - name: Install the end-to-end tests and the browser
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: End-to-end tests
+        working-directory: e2e
+        env:
+          E2E_BASE_URL: http://127.0.0.1:8088
+        run: npx playwright test
+      - name: Keep the test report (only when something failed)
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-report
+          path: e2e/playwright-report
+          retention-days: 7
       - name: Logs of the services (only when something failed)
         if: failure()
         run: docker compose logs --tail=100
