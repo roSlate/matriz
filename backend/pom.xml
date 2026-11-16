@@ -13,7 +13,7 @@
 
     <groupId>com.matriz</groupId>
     <artifactId>matriz-backend</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>1.0.0-rc.1</version>
     <name>matriz-backend</name>
     <description>Matriz: project and task management API</description>
 

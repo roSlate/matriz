@@ -51,7 +51,7 @@ Prerequisites (Docker Desktop running, Java 21, Maven, Node 20.19 or later) and 
 | Configure (once; set the same password in both variables) | `cp .env.example .env` |
 | Start the database | `docker compose up -d db` |
 | Backend tests (starts a temporary PostgreSQL container, needs Docker) | `cd backend && mvn verify` |
-| Build and start the backend with demo data | `cd backend && mvn -DskipTests package && set -a && . ../.env && set +a && SPRING_PROFILES_ACTIVE=dev java -jar target/matriz-backend-0.1.0-SNAPSHOT.jar` |
+| Build and start the backend with demo data | `cd backend && mvn -DskipTests package && set -a && . ../.env && set +a && SPRING_PROFILES_ACTIVE=dev java -jar target/matriz-backend-1.0.0-rc.1.jar` |
 | Install and start the frontend (http://localhost:5173) | `cd frontend && npm install && npm run dev` |
 | The whole application in containers (http://localhost:8088; needs `WEB_PORT` and `SPRING_PROFILES_ACTIVE` in `.env`) | `docker compose up -d --build`, then `docker compose ps`; stop with `docker compose down` |
 | Frontend tests, type check, production build | `cd frontend && npm test`, `npm run typecheck`, `npm run build` |

@@ -46,16 +46,20 @@ What is *not* in the MVP (sprints, notifications, attachments, integrations, and
 | [docs/implementation-plan.md](docs/implementation-plan.md) | Increments for building the MVP, with checks, tests, order of cuts and status. |
 | [docs/ui/](docs/ui/) | Low-fidelity wireframes: dashboard, project detail, task detail. |
 | [docs/verification.md](docs/verification.md) | The nine verification cases with expected result, observed result and evidence; automated, scripted and manual checks kept apart; problems found; review; what could not be verified. The scripted check is in [docs/verification/](docs/verification/). |
+| [docs/test-plan.md](docs/test-plan.md) | The test scenarios derived from the requirements, the permission matrix as tested, which test covers what, and the results of the last run. |
+| [docs/quality-security-review.md](docs/quality-security-review.md) | Code and security review: findings with evidence and decisions, the two-account authorization review, the static analysis (Semgrep). |
+| [CHANGELOG.md](CHANGELOG.md), [docs/release-notes-1.0.0-rc.1.md](docs/release-notes-1.0.0-rc.1.md) | What changed, and the notes of the release candidate `1.0.0-rc.1`. |
+| [e2e/README.md](e2e/README.md) | The end-to-end tests (Playwright). |
 | [docs/review-log.md](docs/review-log.md) | Critical reviews of the specification and of the architecture pack: findings and the decision taken on each, plus the prompt comparison from Exercise 1. |
 | [AGENTS.md](AGENTS.md) | Persistent instructions for AI coding agents working on this repository. |
 
 ## Technology
 
-Java with Spring Boot (backend), React with TypeScript (frontend), PostgreSQL (database), structured as a modular monolith with a REST API described in OpenAPI. Decisions and reasons are in [docs/architecture.md](docs/architecture.md); open points are in [docs/constraints.md](docs/constraints.md), section 4.2.
+Java with Spring Boot (backend), React with TypeScript and Vite (frontend), PostgreSQL (database, schema by Flyway), structured as a modular monolith with a REST API described in OpenAPI. Docker and Docker Compose run the whole application (nginx serves the frontend and forwards `/api` to the backend), GitHub Actions runs the tests and builds the images, and Playwright drives the end-to-end tests. Decisions and reasons are in [docs/architecture.md](docs/architecture.md); open points are in [docs/constraints.md](docs/constraints.md), section 4.2.
 
 ## Current status
 
-**Stage: the MVP is implemented and verified (Ficha 03).** All nine increments of [docs/implementation-plan.md](docs/implementation-plan.md) are done:
+**Release candidate `1.0.0-rc.1`: the MVP is implemented, verified, containerised and covered by a pipeline.** All nine increments of [docs/implementation-plan.md](docs/implementation-plan.md) are done:
 
 | Area | State |
 |---|---|
@@ -66,9 +70,10 @@ Java with Spring Boot (backend), React with TypeScript (frontend), PostgreSQL (d
 | Assignees | Assign and unassign Owners and Members; assignments are removed when someone is removed or demoted. |
 | Comments | Oldest first with "Show more"; written by Owners and Members; shown with the author's name only. |
 | Progress | Computed from the tasks; the Owner can set a manual value (0 to 100) or go back to the computed one. |
-| Security | Every rule is enforced on the server, also for direct API calls; a user without access gets `404`. |
+| Security | Every rule is enforced on the server, also for direct API calls; a user without access gets `404`; security headers and a strict Content-Security-Policy on the pages. |
+| Delivery | Docker images and `docker compose up -d --build`; a GitHub Actions pipeline (tests, then images, smoke test and end-to-end tests); a changelog and release notes. |
 
-How it was checked, what was found and what could not be verified are in [docs/verification.md](docs/verification.md). Next: the testing work of Ficha 04 (test plan, end-to-end tests, quality and security review) and the delivery work of Ficha 05 (containers, continuous integration, release).
+How it was checked, what was found and what could not be verified are in [docs/verification.md](docs/verification.md), [docs/test-plan.md](docs/test-plan.md) and [docs/quality-security-review.md](docs/quality-security-review.md).
 
 ## Running the project (development)
 
@@ -109,7 +114,7 @@ cp .env.example .env
    cd backend
    mvn -DskipTests package
    set -a && . ../.env && set +a
-   SPRING_PROFILES_ACTIVE=dev java -jar target/matriz-backend-0.1.0-SNAPSHOT.jar
+   SPRING_PROFILES_ACTIVE=dev java -jar target/matriz-backend-1.0.0-rc.1.jar
    ```
 
    Health check: `curl http://localhost:8080/api/v1/actuator/health` returns `{"status":"UP",...}`.
@@ -159,6 +164,7 @@ docker compose up -d --build
 |---|---|
 | Backend (unit and integration tests against a temporary PostgreSQL container; the first run downloads the image and takes a few minutes) | `cd backend && mvn verify` |
 | Frontend tests, type check and production build | `cd frontend && npm test`, `npm run typecheck`, `npm run build` |
+| End-to-end tests in a real browser, against the whole application running (for example `docker compose up -d --build`); see [e2e/README.md](e2e/README.md) | `cd e2e && npm install && npx playwright install chromium && npm test` |
 | Scripted check of the nine cases of the ficha against the running application (dev profile; creates and removes throwaway data) | `python3 docs/verification/verify-api.py 1`, restart the backend, `python3 docs/verification/verify-api.py 2` |
 
 The results of the last full run are in [docs/verification.md](docs/verification.md).
@@ -166,6 +172,14 @@ The results of the last full run are in [docs/verification.md](docs/verification
 ### Stopping
 
 `docker compose down` stops the database and keeps its data. `docker compose down -v` also deletes the data.
+
+## Continuous integration
+
+The workflow [.github/workflows/ci.yml](.github/workflows/ci.yml) runs on every push and pull request, with read-only permissions and no secrets:
+
+1. **Backend:** `mvn verify` (the integration tests start a temporary PostgreSQL container).
+2. **Frontend:** type check, tests and production build.
+3. **Docker**, only when 1 and 2 pass: it validates `compose.yaml`, builds the images, starts the stack and waits until every service is healthy, runs a smoke test through nginx (the page, the security headers, a login as a demo user), and then the end-to-end tests. A failing test fails the pipeline and no image is built. The results are in the Actions tab of the GitHub repository.
 
 ## Authentication and the API
 
@@ -190,10 +204,12 @@ curl -s -b jar http://localhost:8080/api/v1/users/me
 
 ```
 matriz/
-├── README.md, AGENTS.md, openapi.yaml, compose.yaml, .env.example
-├── docs/                 specification, design, implementation plan, verification
+├── README.md, AGENTS.md, CHANGELOG.md, openapi.yaml, compose.yaml, .env.example
+├── .github/workflows/    the CI pipeline
+├── docs/                 specification, design, implementation plan, verification, test plan, review, release notes
 │   └── verification/     the scripted check and its recorded output
-├── backend/              Spring Boot (Maven): identity, project, task, comment, security, common
+├── backend/              Spring Boot (Maven): identity, project, task, comment, security, common; Dockerfile
 │   └── src/main/resources/db/{migration,demo}
-└── frontend/             React and TypeScript (Vite): api, components/ui, features, pages
+├── frontend/             React and TypeScript (Vite): api, components/ui, features, pages; Dockerfile, nginx.conf
+└── e2e/                  end-to-end tests (Playwright)
 ```
