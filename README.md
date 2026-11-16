@@ -48,6 +48,7 @@ What is *not* in the MVP (sprints, notifications, attachments, integrations, and
 | [docs/verification.md](docs/verification.md) | The nine verification cases with expected result, observed result and evidence; automated, scripted and manual checks kept apart; problems found; review; what could not be verified. The scripted check is in [docs/verification/](docs/verification/). |
 | [docs/test-plan.md](docs/test-plan.md) | The test scenarios derived from the requirements, the permission matrix as tested, which test covers what, and the results of the last run. |
 | [docs/quality-security-review.md](docs/quality-security-review.md) | Code and security review: findings with evidence and decisions, the two-account authorization review, the static analysis (Semgrep). |
+| [docs/final-report.md](docs/final-report.md) | The final report: changes, results of the tests and the pipeline, problems and solutions, use of AI agents, limitations, and the final validation from a fresh clone. |
 | [CHANGELOG.md](CHANGELOG.md), [docs/release-notes-1.0.0-rc.1.md](docs/release-notes-1.0.0-rc.1.md) | What changed, and the notes of the release candidate `1.0.0-rc.1`. |
 | [e2e/README.md](e2e/README.md) | The end-to-end tests (Playwright). |
 | [docs/review-log.md](docs/review-log.md) | Critical reviews of the specification and of the architecture pack: findings and the decision taken on each, plus the prompt comparison from Exercise 1. |

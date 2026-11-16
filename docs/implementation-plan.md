@@ -204,3 +204,11 @@ Integration tests run against a PostgreSQL container started by the test setup, 
 4. The diff has been reviewed and contains only changes related to the increment.
 5. No credentials or real data are in the repository.
 6. The status in section 4 is updated, and the work is committed with a clear message.
+
+## 8. After increment 9
+
+The plan above covers the implementation stage (Ficha 03). The work that followed is documented in its own files, not repeated here:
+
+- **Tests (Ficha 04):** [test-plan.md](test-plan.md) (scenarios, the permission matrix as tested, results), the unit tests of the validation rules, the end-to-end tests in `e2e/`, and [quality-security-review.md](quality-security-review.md).
+- **Delivery (Ficha 05):** the Dockerfiles and `compose.yaml`, the pipeline `.github/workflows/ci.yml`, [../CHANGELOG.md](../CHANGELOG.md), [release-notes-1.0.0-rc.1.md](release-notes-1.0.0-rc.1.md) and [final-report.md](final-report.md). The release candidate is `1.0.0-rc.1`, tag `v1.0.0-rc.1`.
+
