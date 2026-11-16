@@ -16,7 +16,7 @@ Taken from the requirements and constraints:
 | Consistent deletion: no orphaned data | AC-11.1 | Related data should live in one database with referential integrity. |
 | One organisation, one installation | A-03 | No multi-tenancy. |
 | Requirements still partly assumed | A-01 to A-25 | The domain may change; boundaries must be cheap to move. |
-| Reproducible start from a clean checkout; containers later | NFR-10, K-08 | Few moving parts to start and test. |
+| Reproducible start from a clean checkout, also in containers | NFR-10, K-08 | Few moving parts to start and test. |
 
 ## 2. Options considered
 
@@ -78,7 +78,7 @@ These resolve the items that were pending in [constraints.md](constraints.md), s
 | Database migrations | Flyway, SQL migrations in the repository. | Reproducible schema (NFR-10, Ficha 03). |
 | API conventions | Base path `/api/v1`. Collections paginated with `page` and `size` (default 20, maximum 100). The one exception is the member list of a project, which is not paginated because a project has few members and no cap is enforced. Errors in the standard Problem Details JSON format with a field-error list for validation problems. | Consistent clients, and error bodies that leak nothing internal (CC-02). |
 | Testing | Unit: JUnit 5 and Mockito (backend), Vitest (frontend). Integration: Spring Boot test against a real PostgreSQL in a disposable container. End to end: Playwright. | Covers the three levels required in Ficha 04, with a database that behaves like production. |
-| Containers and CI | The tools are decided: Docker Compose and GitHub Actions. Their layout and configuration are pending until the delivery stage (Ficha 05). | Ficha 05. |
+| Containers and CI | Docker Compose runs three services (`db`, `backend`, `web`; see the deployment view in section 5). A GitHub Actions pipeline tests the backend and the frontend and, only when both pass, builds the images, smoke-tests the stack and runs the end-to-end tests. | One command starts everything (NFR-10); the pipeline fails when a required test fails, and then no image is built. |
 
 ## 5. Components and responsibilities
 
@@ -171,6 +171,39 @@ sequenceDiagram
     S-->>U: the task appears in the list
 ```
 
+### Deployment: the containers and the pipeline
+
+`docker compose up -d --build` starts three services on one Compose network. Only `web` is published on the host (on `127.0.0.1`); the browser sees a single address, so the session and CSRF cookies need no cross-origin rules.
+
+```mermaid
+flowchart LR
+    Browser["Browser"] -->|"http://localhost:8088"| Web
+    subgraph Compose["Docker Compose network"]
+        Web["web: nginx, unprivileged<br/>serves the frontend<br/>forwards /api"] -->|"/api to port 8080"| Backend["backend: Spring Boot<br/>Java 21, non-root"]
+        Backend -->|"JDBC, port 5432"| DB[("db: PostgreSQL 17<br/>volume matriz_db")]
+    end
+```
+
+| Service | Image | Health check | Published |
+|---|---|---|---|
+| `db` | `postgres:17` | `pg_isready` | `127.0.0.1:5432`, for working on the code on the host |
+| `backend` | built from `backend/Dockerfile` (Maven and JDK 21, then a slim Java 21 runtime, non-root) | the actuator health endpoint | no |
+| `web` | built from `frontend/Dockerfile` (Node build, then `nginx-unprivileged`) | the application page | `127.0.0.1:8088` |
+
+Each service waits for the one it depends on to be healthy. The data lives in the named volume `matriz_db`, so it survives removing and recreating the containers. nginx also sets the security headers and the Content-Security-Policy of the pages.
+
+The GitHub Actions pipeline ([../.github/workflows/ci.yml](../.github/workflows/ci.yml)) runs on every push and pull request:
+
+```mermaid
+flowchart LR
+    Push["push or pull request"] --> BE["backend<br/>mvn verify"]
+    Push --> FE["frontend<br/>type check, tests, build"]
+    BE --> DK["docker<br/>build images, start the stack,<br/>smoke test, end-to-end tests"]
+    FE --> DK
+```
+
+The `docker` job needs both of the others, so a failing test stops the pipeline before any image is built.
+
 ## 6. How the architecture meets the quality requirements
 
 | Requirement | How |
@@ -182,7 +215,7 @@ sequenceDiagram
 | NFR-04, S-05, CC-02 (validation, no leaked errors) | Validation in the services (`FieldValidation`); the JSON mapper refuses unknown fields and wrongly typed values (`application.yml` and `StrictJsonConfig`); one error handler with fixed texts, also for unknown routes and bad query values. |
 | NFR-06 (persistence) | PostgreSQL; schema by migrations. |
 | NFR-07, NFR-08 (usable, consistent UI) | A single API client in the frontend; the UI updates from the API's confirmed response. |
-| NFR-09, NFR-10 (testable, reproducible) | Layers can be unit tested; integration tests run against a real database; Docker Compose later. |
+| NFR-09, NFR-10 (testable, reproducible) | Layers can be unit tested; integration tests run against a real database; Docker Compose runs the whole application. |
 | AC-11.1 (no orphaned data) | Foreign keys with cascading deletion, see [database.md](database.md). |
 
 ## 7. Risks and open points
@@ -192,4 +225,4 @@ sequenceDiagram
 - **Authorisation depends on two things being complete:** the access step must cover every route that has an identifier in its path, and every service must assert the role for its operation. A route that forgets either is a vulnerability. Mitigation: authorisation tests for every write endpoint and a test for CC-05 (written with each increment, with mutation checks that disable the guard; see [verification.md](verification.md)), and a review checklist.
 - **Two cross-module mechanisms** (the `TaskCounts` port and the membership event) must stay the only ones. Any new need to cross a module boundary is a design decision to record here.
 - **No brute-force protection on login** (accepted, see [constraints.md](constraints.md), section 6).
-- **Docker depends on Docker Desktop running** (checked: Docker 29.1.3 and Compose 2.40 work from WSL). It is needed for the integration tests (Ficha 04) and for containers (Ficha 05). If it is not running, integration tests cannot start; a separate test database is the fallback.
+- **Docker depends on Docker Desktop running** (checked: Docker 29.1.3 and Compose 2.40 work from WSL). It is needed for the integration tests and for running the application in containers. If it is not running, integration tests cannot start; a separate test database is the fallback.

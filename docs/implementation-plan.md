@@ -26,7 +26,7 @@ Decisions already taken are in [architecture.md](architecture.md) (Java and Spri
 |---|---|---|
 | Repository layout | `backend/` (Maven project) and `frontend/` (Vite project) in the same repository, plus `compose.yaml` and `.env.example` at the root. | One repository, as the ficha requires; simple to run and to containerise later. |
 | Java package root | `com.matriz`, with one sub-package per module: `identity`, `project`, `task`, `comment`, plus `common` and `security`. | Mirrors the architecture; short. |
-| Database during development | PostgreSQL in a Docker container started by `compose.yaml` (database service only at this stage). Data lives in a named volume. | Reproducible, no local installation. Ficha 05 extends the same file with the application services. |
+| Database during development | PostgreSQL in a Docker container started by `compose.yaml` (database service only at this stage; the backend and web services were added in Ficha 05, see [architecture.md](architecture.md), section 5). Data lives in a named volume. | Reproducible, no local installation. |
 | Schema | Flyway migrations in `backend/src/main/resources/db/migration`, written from [database.md](database.md). | Reproducible schema (Ficha 03, exercise 2). |
 | Demo data | A separate Flyway location (`db/demo`) that is enabled only by the `dev` profile. It creates three fictional users and three projects with different access (see below). | Runs once, never wipes data on later starts, and cannot reach a real deployment (A-16). |
 | Configuration | Environment variables read by Spring; `.env.example` lists them with fictional values; the real `.env` is ignored by Git. | S-08. |

@@ -2,7 +2,7 @@
 
 Status: draft for Ficha 02. Related documents: [requirements.md](requirements.md), [user-stories.md](user-stories.md), [constraints.md](constraints.md), [architecture.md](architecture.md).
 
-This is the conceptual and logical model for PostgreSQL. It contains no SQL: the schema is created later, by migrations (Ficha 03). The model is derived from the requirements of Matriz, not from example models. Everything that is a business rule or an assumption points to its source.
+This is the conceptual and logical model for PostgreSQL. It contains no SQL: the schema is created by the Flyway migration `V1__create_schema.sql`, written from this model. The model is derived from the requirements of Matriz, not from example models. Everything that is a business rule or an assumption points to its source.
 
 ## 1. Entities
 
