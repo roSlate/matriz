@@ -53,6 +53,7 @@ Prerequisites (Docker Desktop running, Java 21, Maven, Node 20.19 or later) and 
 | Backend tests (starts a temporary PostgreSQL container, needs Docker) | `cd backend && mvn verify` |
 | Build and start the backend with demo data | `cd backend && mvn -DskipTests package && set -a && . ../.env && set +a && SPRING_PROFILES_ACTIVE=dev java -jar target/matriz-backend-0.1.0-SNAPSHOT.jar` |
 | Install and start the frontend (http://localhost:5173) | `cd frontend && npm install && npm run dev` |
+| The whole application in containers (http://localhost:8088; needs `WEB_PORT` and `SPRING_PROFILES_ACTIVE` in `.env`) | `docker compose up -d --build`, then `docker compose ps`; stop with `docker compose down` |
 | Frontend tests, type check, production build | `cd frontend && npm test`, `npm run typecheck`, `npm run build` |
 | Scripted check of the running application (dev profile only; creates and removes throwaway data) | `python3 docs/verification/verify-api.py 1`, restart the backend, `python3 docs/verification/verify-api.py 2` |
 

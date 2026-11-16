@@ -92,7 +92,8 @@ cp .env.example .env
 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | `compose.yaml` | Name, user and password of the PostgreSQL 17 container. The password has no default: the container does not start without it. |
 | `DB_URL` | backend | JDBC URL of the database (default `jdbc:postgresql://localhost:5432/matriz`). |
 | `DB_USER`, `DB_PASSWORD` | backend | Database user (default `matriz`) and password (no default). |
-| `SPRING_PROFILES_ACTIVE` | backend | Set to `dev` to also load the demo data. Never in a real deployment. |
+| `SPRING_PROFILES_ACTIVE` | backend, `compose.yaml` | Set to `dev` to also load the demo data. Never in a real deployment. |
+| `WEB_PORT` | `compose.yaml` | Host port of the web service when the whole application runs in Docker (default `8088`). |
 
 ### Start-up
 
@@ -122,6 +123,21 @@ cp .env.example .env
    ```
 
    Open http://localhost:5173 and log in with one of the demo accounts below. The dev server forwards `/api` to the backend on port 8080, so the browser sees one address and no cross-origin rules are needed.
+
+### Whole application with Docker Compose
+
+Instead of steps 2 and 3 above, one command starts the database, the backend and the web server in containers:
+
+```bash
+docker compose up -d --build
+```
+
+- Open http://localhost:8088 and log in with one of the demo accounts below. `docker compose ps` shows the three services as `healthy`; `docker compose logs --tail=50` shows their logs.
+- The first build takes several minutes, because the base images and the Maven and npm dependencies are downloaded; later builds reuse them.
+- Only the `web` service (nginx) is published, on `127.0.0.1:8088` (change it with `WEB_PORT` in `.env`). nginx serves the frontend and forwards `/api` to the backend, so the browser sees one address. The backend is not reachable from the host.
+- `SPRING_PROFILES_ACTIVE=dev` in `.env` loads the fictional demo data. Leave it empty to start without demo data, and never use `dev` in a real deployment. **If your `.env` was created before the Docker files existed, add the two new lines (`WEB_PORT` and `SPRING_PROFILES_ACTIVE`) from `.env.example`**; without `dev` the schema is created but there are no demo users, so no login works.
+- `docker compose up -d db` still starts only the database, for working on the code with the backend and the frontend on the host.
+- The data lives in the named volume `matriz_db`: `docker compose down` removes the containers and keeps the data, and `docker compose down -v` also deletes it.
 
 ### Database schema and demo data
 
