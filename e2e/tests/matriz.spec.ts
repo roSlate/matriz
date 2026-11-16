@@ -59,3 +59,27 @@ test("a user who is not a member of a project cannot open it", async ({ page }) 
   await expect(page.getByText("This project no longer exists, or you no longer have access to it.")).toBeVisible();
   await expect(page.getByText("Team handbook")).toHaveCount(0); // nothing about it is shown
 });
+
+test("the pages load under the Content-Security-Policy, without violations, and the progress bar is drawn", async ({ page }) => {
+  // The policy is set by nginx. A violation shows up as a console error, so collect them.
+  const violations: string[] = [];
+  page.on("console", (message) => {
+    if (/content security policy/i.test(message.text())) {
+      violations.push(message.text());
+    }
+  });
+
+  await logIn(page, "ana@example.org");
+  await expect(page.getByRole("heading", { name: "My projects" })).toBeVisible();
+  await page.getByRole("link", { name: /Website redesign/ }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Website redesign" })).toBeVisible();
+
+  // The bar's width comes from a style attribute, which the policy must still allow: a bar with a
+  // positive value has a visible fill.
+  const fill = page.getByRole("progressbar").first().locator("span");
+  await expect(fill).toBeVisible();
+  const width = await fill.evaluate((element) => element.getBoundingClientRect().width);
+  expect(width).toBeGreaterThan(0);
+
+  expect(violations).toEqual([]);
+});

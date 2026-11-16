@@ -86,6 +86,17 @@ jobs:
           # The application shell, also for a path that only the frontend router knows.
           curl -fsS "$WEB/" | grep -q '<title>Matriz</title>'
           curl -fsS "$WEB/projects/1" | grep -q '<title>Matriz</title>'
+          # Security headers on what nginx serves (pages, client-side routes, built files), no version
+          # in the Server header, and exactly one copy of the headers on API answers.
+          for url in "$WEB/" "$WEB/projects/1" "$WEB$(curl -fsS "$WEB/" | grep -oE '/assets/[^"]+\.js' | head -1)"; do
+            headers="$(curl -sSI "$url")"
+            grep -qi '^x-frame-options: DENY' <<<"$headers"
+            grep -qi '^x-content-type-options: nosniff' <<<"$headers"
+            grep -qi '^referrer-policy: no-referrer' <<<"$headers"
+            grep -qi "^content-security-policy: .*frame-ancestors 'none'" <<<"$headers"
+            if grep -qiE '^server: nginx/[0-9]' <<<"$headers"; then echo "nginx version disclosed for $url"; exit 1; fi
+          done
+          test "$(curl -sSI "$WEB/api/v1/users/me" | grep -ci '^x-frame-options:')" = 1
           # Health of the backend through nginx.
           curl -fsS "$WEB/api/v1/actuator/health" | grep -q '"status":"UP"'
           # Without a session the API answers 401, and hands out the CSRF cookie.
