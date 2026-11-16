@@ -2,7 +2,21 @@
 
 Status: Ficha 05, delivery and Exercise 6. Version `1.0.0-rc.1` (release candidate), Git tag `v1.0.0-rc.1`. Date: 2026-11-16. Related documents: [../README.md](../README.md), [../CHANGELOG.md](../CHANGELOG.md), [release-notes-1.0.0-rc.1.md](release-notes-1.0.0-rc.1.md), [verification.md](verification.md), [test-plan.md](test-plan.md), [quality-security-review.md](quality-security-review.md), [implementation-plan.md](implementation-plan.md).
 
-The report follows the five points the ficha asks for (sections 1 to 5), then the final validation of Exercise 6 (section 6) and the state of the optional challenges (section 7).
+The report starts with the analysis and plan of Exercise 1 (section 0), follows the five points the ficha asks for (sections 1 to 5), then the final validation of Exercise 6 (section 6) and the state of the optional challenges (section 7).
+
+## 0. Analysis and plan (Exercise 1)
+
+Before any Docker file was written, the agent analysed the repository and presented a plan, which the developer approved. In summary:
+
+| Question of the exercise | Finding |
+|---|---|
+| Main components | A Spring Boot backend (Java 21, Maven), a React and TypeScript frontend (Vite), and a PostgreSQL 17 database with the schema in Flyway migrations. |
+| Dependencies, versions and commands | Java 21, Maven 3.8 or later, Node 20.19 or later, Docker; the commands were already in the README (`mvn verify`, `npm test`, `npm run build`). |
+| External services and environment variables | No external service besides the database. The configuration is environment variables: `POSTGRES_*` for the database container and `DB_URL`, `DB_USER`, `DB_PASSWORD` for the backend, plus `SPRING_PROFILES_ACTIVE` (demo data). |
+| Automated tests that exist | 134 backend and 122 frontend tests at that time, with the backend integration tests needing Docker for their PostgreSQL container. |
+| Strategy for a reproducible environment | Docker Compose with three services (`db`, `backend`, `web`), health checks and a volume, and a pipeline that tests first and builds the images only afterwards. |
+
+**Files to create or change:** `backend/Dockerfile`, `frontend/Dockerfile`, `frontend/nginx.conf`, the two `.dockerignore` files, `compose.yaml` and `.env.example`, `.github/workflows/ci.yml`, then `CHANGELOG.md`, the release notes and the documentation. **Order:** images, then Compose with local validation, then the pipeline (including the controlled failure), then the tests and review of Ficha 04, then the release documents and the final validation. The decisions that were left to the developer (the release version, the end-to-end tool, the static analysis tool) are listed in section 4.
 
 ## 1. Changes implemented
 
