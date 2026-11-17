@@ -78,11 +78,70 @@ How it was checked, what was found and what could not be verified are in [docs/v
 
 ## Running the project (development)
 
+### Quick start with Docker
+
+The shortest way to run Matriz. You need only **Git** and **Docker Desktop (running)**: no Java, Maven or Node. The repository is private, so you need access to clone it.
+
+**1. Get the code**
+
+```bash
+git clone https://github.com/roSlate/matriz.git
+cd matriz
+```
+
+**2. Create your configuration**
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` in a text editor and replace the two passwords `change-me-locally` (`POSTGRES_PASSWORD` and `DB_PASSWORD`) with **the same password of your own**, letters and digits only. On Linux, macOS or WSL one command does it (replace `MyPassword123` with your password; on macOS write `sed -i ''`):
+
+```bash
+sed -i 's/change-me-locally/MyPassword123/g' .env
+```
+
+Leave the rest of the file as it is: it already turns on the demo data and uses port 8088.
+
+**3. Start everything**
+
+```bash
+docker compose up -d --build
+```
+
+The first time takes several minutes, because the base images and the dependencies are downloaded. Later starts take well under a minute.
+
+**4. Check that it is ready**
+
+```bash
+docker compose ps
+```
+
+You should see three services, `db`, `backend` and `web`, each with the status `healthy`. If one says `starting`, wait a minute and run the command again.
+
+**5. Open it**
+
+Go to **http://localhost:8088** and log in with `ana@example.org` and the password `matriz-demo`. The other demo accounts are listed [below](#database-schema-and-demo-data).
+
+**Stop and start again.** `docker compose down` stops it and keeps the data; `docker compose up -d` starts it again. `docker compose down -v` also deletes the data, so the next start begins from the clean demo data.
+
+**If something goes wrong**
+
+| What you see | Why | What to do |
+|---|---|---|
+| `docker: command not found`, or "Cannot connect to the Docker daemon" | Docker Desktop is not running (or, on WSL, its WSL integration is off). | Start Docker Desktop and wait until it says it is running; on WSL, turn on the integration for your distribution in its settings. |
+| "Set POSTGRES_PASSWORD in .env" | There is no `.env` file. | Run `cp .env.example .env` (step 2). |
+| "port is already allocated" for 8088 | Another program uses that port. | Put `WEB_PORT=8090` (or any free port) in `.env`, start again, and open that port instead. |
+| The page opens, but the login says "Invalid email or password" | The demo data was not loaded, because `SPRING_PROFILES_ACTIVE=dev` is missing from your `.env` (for example an older `.env`). | Add the line `SPRING_PROFILES_ACTIVE=dev` to `.env`, then run `docker compose down -v` and `docker compose up -d --build`. |
+| "password authentication failed" in the backend logs | PostgreSQL reads the password only when it first creates its data, and you changed it afterwards. | Run `docker compose down -v` (this deletes the data) and start again. |
+| A service stays `unhealthy` | It failed to start. | Run `docker compose logs --tail=50` to see why. |
+
+The rest of this section explains each part, and how to run the backend and the frontend on your own machine to work on the code.
+
 ### Requirements
 
-- Docker Desktop running (with WSL integration if you use WSL): the database and the backend tests use containers.
-- Java 21 and Maven 3.8 or later.
-- Node 20.19 or later (with npm).
+- Docker Desktop running (with WSL integration if you use WSL). This is all the quick start above needs.
+- To run the backend and the frontend **on your machine** (steps 2 and 3 below) or to run their tests: Java 21 and Maven 3.8 or later, and Node 20.19 or later (with npm).
 - Optional: Python 3, only for the scripted check in [docs/verification/](docs/verification/).
 
 ### Configuration
